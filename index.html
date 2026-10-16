@@ -1,32 +1,1975 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport"
-        content="width=device-width, initial-scale=1.0">
-  <title>Niewohner Safety Forms</title>
-  <style>
-    * { box-sizing: border-box; }
-    html, body {
-      margin: 0;
-      width: 100%;
-      height: 100%;
-      background: #F5F3EE;
-    }
-    iframe {
-      display: block;
-      width: 100%;
-      height: 100vh;
-      border: none;
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Safety Forms</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+  :root {
+    --bg: #F5F3EE;
+    --surface: #FFFFFF;
+    --border: #D8D4CC;
+    --border-strong: #B0AA9E;
+    --text: #1A1916;
+    --text-muted: #6B6760;
+    --accent: #1A3A2A;
+    --accent-light: #2D6147;
+    --accent-bg: #EAF0EC;
+    --danger: #8B2020;
+    --danger-bg: #FDF0F0;
+    --success: #1A3A2A;
+    --success-bg: #EAF0EC;
+    --radius: 6px;
+    --font: 'IBM Plex Sans', sans-serif;
+    --mono: 'IBM Plex Mono', monospace;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    font-size: 15px;
+    line-height: 1.5;
+  }
+
+  /* ── SCREENS ── */
+  .screen { display: none; min-height: 100vh; }
+  .screen.active { display: flex; flex-direction: column; }
+
+  /* ── LOGIN ── */
+  #screen-login {
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+  }
+
+  .login-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 2.5rem;
+    width: 100%;
+    max-width: 420px;
+  }
+
+  .org-label {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 0.35rem;
+  }
+
+  .login-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 0.25rem;
+  }
+
+  .login-sub {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-bottom: 2rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  /* ── FORM ELEMENTS ── */
+  label {
+    display: block;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+    margin-bottom: 0.4rem;
+  }
+
+  input[type="text"], input[type="date"], input[type="time"], textarea, select {
+    width: 100%;
+    padding: 0.6rem 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    font-family: var(--font);
+    font-size: 14px;
+    color: var(--text);
+    background: var(--surface);
+    transition: border-color 0.15s;
+    appearance: none;
+  }
+
+  input:focus, textarea:focus, select:focus {
+    outline: none;
+    border-color: var(--accent-light);
+    box-shadow: 0 0 0 3px rgba(45,97,71,0.1);
+  }
+
+  textarea { resize: vertical; min-height: 90px; }
+
+  .field { margin-bottom: 1.25rem; }
+  .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.25rem; }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.65rem 1.4rem;
+    border-radius: var(--radius);
+    font-family: var(--font);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    border: none;
+    transition: all 0.15s;
+    text-decoration: none;
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    color: #fff;
+    width: 100%;
+    padding: 0.75rem;
+    font-size: 15px;
+    margin-top: 0.5rem;
+  }
+  .btn-primary:hover { background: var(--accent-light); }
+
+  .btn-secondary {
+    background: transparent;
+    color: var(--text-muted);
+    border: 1px solid var(--border);
+  }
+  .btn-secondary:hover { border-color: var(--border-strong); color: var(--text); }
+
+  .btn-back {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 13px;
+    cursor: pointer;
+    padding: 0;
+    font-family: var(--font);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+  .btn-back:hover { color: var(--text); }
+
+  .error-msg {
+    background: var(--danger-bg);
+    color: var(--danger);
+    border: 1px solid #F5C5C5;
+    border-radius: var(--radius);
+    padding: 0.6rem 0.85rem;
+    font-size: 13px;
+    margin-top: 0.75rem;
+    display: none;
+  }
+
+  /* ── MENU ── */
+  #screen-menu { padding: 0; }
+
+  .top-bar {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0.85rem 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .top-bar-left { display: flex; flex-direction: column; }
+  .top-bar-title { font-size: 15px; font-weight: 600; }
+  .top-bar-user {
+    font-size: 12px;
+    color: var(--text-muted);
+    font-family: var(--mono);
+  }
+
+  .menu-body { padding: 1.5rem; max-width: 700px; margin: 0 auto; width: 100%; }
+
+  .menu-heading {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 0.75rem;
+    font-family: var(--mono);
+  }
+
+  .form-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.1rem 1.25rem;
+    margin-bottom: 0.6rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    transition: all 0.15s;
+  }
+  .form-card:hover { border-color: var(--accent-light); box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+
+  .form-card-info { display: flex; align-items: center; gap: 1rem; }
+
+  .form-icon {
+    width: 38px; height: 38px;
+    background: var(--accent-bg);
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+
+  .form-card-name { font-weight: 500; font-size: 15px; }
+  .form-card-desc { font-size: 12px; color: var(--text-muted); margin-top: 1px; }
+
+  .chevron { color: var(--border-strong); font-size: 18px; }
+
+  /* ── FORM SCREEN ── */
+  #screen-form { background: var(--bg); }
+
+  .form-header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 1rem 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .form-header-info { flex: 1; }
+  .form-header-title { font-size: 16px; font-weight: 600; }
+  .form-header-sub { font-size: 12px; color: var(--text-muted); font-family: var(--mono); }
+
+  .form-body {
+    padding: 1.5rem;
+    max-width: 700px;
+    margin: 0 auto;
+    width: 100%;
+  }
+
+  .section-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .section-title {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    font-family: var(--mono);
+    margin-bottom: 1rem;
+    padding-bottom: 0.6rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  /* Checkboxes */
+  .checkbox-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
+  .checkbox-item { display: flex; align-items: center; gap: 0.6rem; cursor: pointer; }
+  .checkbox-item input[type="checkbox"] {
+    width: 16px; height: 16px;
+    accent-color: var(--accent);
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .checkbox-item span { font-size: 14px; }
+
+  .other-field { margin-top: 0.75rem; }
+
+  /* Submit bar */
+  .submit-bar {
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    padding: 1rem 1.5rem;
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+    justify-content: flex-end;
+    position: sticky;
+    bottom: 0;
+  }
+
+  .btn-submit {
+    background: var(--accent);
+    color: #fff;
+    padding: 0.7rem 1.75rem;
+    font-size: 14px;
+    font-weight: 500;
+  }
+  .btn-submit:hover { background: var(--accent-light); }
+  .btn-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  /* ── CONFIRMATION ── */
+  #screen-confirm {
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+  }
+
+  .confirm-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 2.5rem;
+    max-width: 420px;
+    width: 100%;
+    text-align: center;
+  }
+
+  .confirm-icon {
+    width: 56px; height: 56px;
+    background: var(--success-bg);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 1.25rem;
+    font-size: 26px;
+  }
+
+  .confirm-title { font-size: 1.3rem; font-weight: 600; margin-bottom: 0.5rem; }
+  .confirm-sub { font-size: 14px; color: var(--text-muted); margin-bottom: 1.75rem; line-height: 1.6; }
+
+  .confirm-detail {
+    background: var(--bg);
+    border-radius: var(--radius);
+    padding: 0.85rem 1rem;
+    font-size: 13px;
+    color: var(--text-muted);
+    text-align: left;
+    margin-bottom: 1.5rem;
+    font-family: var(--mono);
+  }
+  .confirm-detail div { margin-bottom: 0.25rem; }
+
+  .btn-new { width: 100%; }
+
+  /* Required star */
+  .req { color: var(--danger); margin-left: 2px; }
+
+  /* Loading spinner */
+  .spinner {
+    width: 16px; height: 16px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    display: none;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Optional reporter note */
+  .optional-note {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border);
+  }
+
+  @media (max-width: 480px) {
+    .field-row { grid-template-columns: 1fr; }
+    .checkbox-grid { grid-template-columns: 1fr; }
+    .login-card { padding: 1.75rem 1.5rem; }
+  }
+</style>
 </head>
 <body>
-  <iframe
-    src="https://script.google.com/macros/s/AKfycbz0TMRzD2cqgFEt7nhMZJF5BbAelCioYqGcnuh2I4bNP5BPKjg6ZcH2ezqfYqgWIqQ/exec"
-    title="Niewohner Safety Forms"
-    allow="clipboard-write">
-  </iframe>
+
+<!-- ══════════════════════════════════════
+     SCREEN 1 — LOGIN
+══════════════════════════════════════ -->
+<div id="screen-login" class="screen active">
+  <div class="login-card">
+    <div class="org-label">Niewohner Entities</div>
+    <div class="login-title" id="app-title">Safety Forms</div>
+    <div class="login-sub">Enter your information to access forms</div>
+
+    <div class="field">
+      <label for="login-name">Full Name <span class="req">*</span></label>
+      <input type="text" id="login-name" placeholder="First Last" autocomplete="name">
+    </div>
+    <div class="field">
+      <label for="login-empid">Employee ID <span class="req">*</span></label>
+      <input type="text" id="login-empid" placeholder="e.g. EMP-1234" autocomplete="off">
+    </div>
+    <div class="field">
+      <label for="login-password">Access Password <span class="req">*</span></label>
+      <input type="password" id="login-password" placeholder="Enter access password" autocomplete="off">
+    </div>
+
+    <button class="btn btn-primary" onclick="doLogin()">
+      <span id="login-btn-text">Continue</span>
+      <div class="spinner" id="login-spinner"></div>
+    </button>
+    <div class="error-msg" id="login-error">Please enter your full name and employee ID.</div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     SCREEN 2 — MENU
+══════════════════════════════════════ -->
+<div id="screen-menu" class="screen">
+  <div class="top-bar">
+    <div class="top-bar-left">
+      <div class="top-bar-title">Safety Forms</div>
+      <div class="top-bar-user" id="topbar-user"></div>
+    </div>
+    <button class="btn btn-secondary" onclick="doLogout()" style="font-size:13px;padding:0.45rem 0.9rem;">Sign out</button>
+  </div>
+  <div class="menu-body">
+    <div class="menu-heading">Available Forms</div>
+
+    <div class="form-card" onclick="openForm('near-miss')">
+      <div class="form-card-info">
+        <div class="form-icon">⚠️</div>
+        <div>
+          <div class="form-card-name">Near Miss Report</div>
+          <div class="form-card-desc">Report a near miss incident or unsafe condition</div>
+        </div>
+      </div>
+      <div class="chevron">›</div>
+    </div>
+
+    <div class="form-card" onclick="openForm('employee-injury')">
+      <div class="form-card-info">
+        <div class="form-icon">🩹</div>
+        <div>
+          <div class="form-card-name">Employee Report of Injury</div>
+          <div class="form-card-desc">Report a work-related injury, illness, or near miss</div>
+        </div>
+      </div>
+      <div class="chevron">›</div>
+    </div>
+
+    <div class="form-card" onclick="openForm('supervisor-accident')">
+      <div class="form-card-info">
+        <div class="form-icon">📋</div>
+        <div>
+          <div class="form-card-name">Supervisor Accident Investigation</div>
+          <div class="form-card-desc">Supervisor's investigation report for accidents</div>
+        </div>
+      </div>
+      <div class="chevron">›</div>
+    </div>
+
+    <div class="form-card" onclick="openForm('incident-investigation')">
+      <div class="form-card-info">
+        <div class="form-icon">🔍</div>
+        <div>
+          <div class="form-card-name">Incident Investigation Report</div>
+          <div class="form-card-desc">Detailed investigation for serious injuries or incidents</div>
+        </div>
+      </div>
+      <div class="chevron">›</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     SCREEN 3 — DYNAMIC FORM
+══════════════════════════════════════ -->
+<div id="screen-form" class="screen">
+  <div class="form-header">
+    <button class="btn-back" onclick="goBack()">← Back</button>
+    <div class="form-header-info">
+      <div class="form-header-title" id="form-header-title">Form</div>
+      <div class="form-header-sub" id="form-header-user"></div>
+    </div>
+  </div>
+
+  <div class="form-body">
+
+    <!-- Reporter (optional) -->
+    <div class="section-card">
+      <div class="section-title">Reporter</div>
+      <div class="field" style="margin-bottom:0;">
+        <label for="f-reporter">Reported by (optional — leave blank to report anonymously)</label>
+        <input type="text" id="f-reporter" placeholder="Name will pre-fill from login if left blank">
+      </div>
+      <div class="optional-note">You may leave this blank to submit anonymously. Your employee ID will not appear on the report.</div>
+    </div>
+
+    <!-- Near Miss Details -->
+    <div class="section-card">
+      <div class="section-title">Near Miss Details</div>
+
+      <div class="field-row">
+        <div class="field" style="margin-bottom:0;">
+          <label for="f-date">Date of near miss <span class="req">*</span></label>
+          <input type="date" id="f-date">
+        </div>
+        <div class="field" style="margin-bottom:0;">
+          <label for="f-time">Time of near miss <span class="req">*</span></label>
+          <input type="time" id="f-time">
+        </div>
+      </div>
+
+      <div class="field" style="margin-top:1.1rem;">
+        <label for="f-location">Location of the near miss <span class="req">*</span></label>
+        <input type="text" id="f-location" placeholder="Building, area, or specific location">
+      </div>
+
+      <div class="field" style="margin-bottom:0;">
+        <label for="f-describe">Describe the near miss <span class="req">*</span></label>
+        <textarea id="f-describe" placeholder="Provide a detailed description of what happened..."></textarea>
+      </div>
+
+      <div class="field" style="margin-top:1.1rem; margin-bottom:0;">
+        <label for="f-witnesses">Details of witnesses, if any</label>
+        <textarea id="f-witnesses" style="min-height:60px;" placeholder="Name(s) and contact info of any witnesses"></textarea>
+      </div>
+    </div>
+
+    <!-- Category -->
+    <div class="section-card">
+      <div class="section-title">Near Miss Category</div>
+      <label style="margin-bottom:0.75rem;">Select the appropriate category <span class="req">*</span></label>
+      <div class="checkbox-grid" id="category-group">
+        <label class="checkbox-item"><input type="radio" name="category" value="Slip, Trip, or Fall"> <span>Slip, Trip, or Fall</span></label>
+        <label class="checkbox-item"><input type="radio" name="category" value="Equipment or Machinery Malfunction"> <span>Equipment or Machinery Malfunction</span></label>
+        <label class="checkbox-item"><input type="radio" name="category" value="Unsafe Work Conditions"> <span>Unsafe Work Conditions</span></label>
+        <label class="checkbox-item"><input type="radio" name="category" value="Hazardous Material Exposure"> <span>Hazardous Material Exposure</span></label>
+        <label class="checkbox-item"><input type="radio" name="category" value="Communication Failure"> <span>Communication Failure</span></label>
+        <label class="checkbox-item"><input type="radio" name="category" value="Procedural Error"> <span>Procedural Error</span></label>
+        <label class="checkbox-item"><input type="radio" name="category" value="Other"> <span>Other</span></label>
+      </div>
+      <div class="other-field" id="category-other-wrap" style="display:none;">
+        <input type="text" id="f-category-other" placeholder="Specify category...">
+      </div>
+    </div>
+
+    <!-- Persons Involved -->
+    <div class="section-card">
+      <div class="section-title">Person(s) Involved</div>
+      <div class="field">
+        <label for="f-persons">Name(s) of person(s) directly involved <span class="req">*</span></label>
+        <textarea id="f-persons" style="min-height:60px;" placeholder="Full names of everyone directly involved"></textarea>
+      </div>
+      <div class="field" style="margin-bottom:0;">
+        <label for="f-jobtitles">Job title(s) of person(s) involved</label>
+        <input type="text" id="f-jobtitles" placeholder="e.g. Equipment Operator, Field Supervisor">
+      </div>
+    </div>
+
+    <!-- Potential Consequences -->
+    <div class="section-card">
+      <div class="section-title">Potential Consequences</div>
+      <div class="field" style="margin-bottom:0;">
+        <label for="f-consequences">Describe the potential consequences if this had resulted in an incident <span class="req">*</span></label>
+        <textarea id="f-consequences" placeholder="What injury, damage, or loss could have occurred?"></textarea>
+      </div>
+    </div>
+
+    <!-- Actions Taken -->
+    <div class="section-card">
+      <div class="section-title">Actions Taken</div>
+      <div class="field" style="margin-bottom:0;">
+        <label for="f-actions">Describe any immediate actions taken to prevent an incident <span class="req">*</span></label>
+        <textarea id="f-actions" placeholder="What was done immediately after the near miss was identified?"></textarea>
+      </div>
+    </div>
+
+    <!-- Contributing Factors -->
+    <div class="section-card">
+      <div class="section-title">Contributing Factors</div>
+      <label style="margin-bottom:0.75rem;">Were there any contributing factors? Select all that apply:</label>
+      <div class="checkbox-grid">
+        <label class="checkbox-item"><input type="checkbox" name="factor" value="Inadequate training"> <span>Inadequate training</span></label>
+        <label class="checkbox-item"><input type="checkbox" name="factor" value="Equipment failure"> <span>Equipment failure</span></label>
+        <label class="checkbox-item"><input type="checkbox" name="factor" value="Unsafe work conditions"> <span>Unsafe work conditions</span></label>
+        <label class="checkbox-item"><input type="checkbox" name="factor" value="Poor housekeeping"> <span>Poor housekeeping</span></label>
+        <label class="checkbox-item"><input type="checkbox" name="factor" value="Human error"> <span>Human error</span></label>
+        <label class="checkbox-item"><input type="checkbox" name="factor" value="Lack of supervision"> <span>Lack of supervision</span></label>
+        <label class="checkbox-item"><input type="checkbox" name="factor" value="Lack of Communication"> <span>Lack of communication</span></label>
+        <label class="checkbox-item"><input type="checkbox" name="factor" value="Time pressure"> <span>Time pressure</span></label>
+        <label class="checkbox-item"><input type="checkbox" name="factor" value="Other"> <span>Other</span></label>
+      </div>
+      <div class="other-field" id="factor-other-wrap" style="display:none;">
+        <input type="text" id="f-factor-other" placeholder="Specify contributing factor...">
+      </div>
+    </div>
+
+    <!-- Preventive Measures -->
+    <div class="section-card">
+      <div class="section-title">Preventive Measures</div>
+      <div class="field" style="margin-bottom:0;">
+        <label for="f-preventive">What preventive measures can be implemented to avoid similar near misses? <span class="req">*</span></label>
+        <textarea id="f-preventive" placeholder="Recommendations to prevent recurrence..."></textarea>
+      </div>
+    </div>
+
+    <div style="height:5rem;"></div>
+  </div>
+
+  <!-- ── OTHER FORM SECTIONS (shown/hidden by openForm) ── -->
+  <div id="other-forms-container" style="padding:0 1.5rem; max-width:700px; margin:0 auto; width:100%;">
+  </div>
+
+  <div class="submit-bar">
+    <div class="error-msg" id="form-error" style="flex:1;margin-top:0;display:none;"></div>
+    <button class="btn btn-secondary" onclick="goBack()">Cancel</button>
+    <button class="btn btn-primary btn-submit" id="submit-btn" onclick="submitForm()">
+      <span id="submit-btn-text">Submit Report</span>
+      <div class="spinner" id="submit-spinner"></div>
+    </button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     FORM: EMPLOYEE REPORT OF INJURY
+══════════════════════════════════════ -->
+<div id="form-employee-injury" class="form-section" style="display:none;">
+  <div class="section-card">
+    <div class="section-title">Report Type</div>
+    <label style="margin-bottom:0.75rem;">I am reporting a work related: <span class="req">*</span></label>
+    <div style="display:flex;gap:1.5rem;flex-wrap:wrap;">
+      <label class="checkbox-item"><input type="radio" name="ei-type" value="Injury"> <span>Injury</span></label>
+      <label class="checkbox-item"><input type="radio" name="ei-type" value="Illness"> <span>Illness</span></label>
+      <label class="checkbox-item"><input type="radio" name="ei-type" value="Near miss"> <span>Near miss</span></label>
+    </div>
+  </div>
+
+  <div class="section-card">
+    <div class="section-title">Employee Information</div>
+    <div class="field">
+      <label for="ei-name">Your Name <span class="req">*</span></label>
+      <input type="text" id="ei-name">
+    </div>
+    <div class="field">
+      <label for="ei-jobtitle">Job Title <span class="req">*</span></label>
+      <input type="text" id="ei-jobtitle">
+    </div>
+    <div class="field">
+      <label for="ei-supervisor">Supervisor <span class="req">*</span></label>
+      <input type="text" id="ei-supervisor">
+    </div>
+    <div class="field" style="margin-bottom:0;">
+      <label>Have you told your supervisor about this injury/near miss? <span class="req">*</span></label>
+      <div style="display:flex;gap:1.5rem;margin-top:0.4rem;">
+        <label class="checkbox-item"><input type="radio" name="ei-told-supervisor" value="Yes"> <span>Yes</span></label>
+        <label class="checkbox-item"><input type="radio" name="ei-told-supervisor" value="No"> <span>No</span></label>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-card">
+    <div class="section-title">Incident Details</div>
+    <div class="field-row">
+      <div class="field" style="margin-bottom:0;">
+        <label for="ei-date">Date of injury/near miss <span class="req">*</span></label>
+        <input type="date" id="ei-date">
+      </div>
+      <div class="field" style="margin-bottom:0;">
+        <label for="ei-time">Time <span class="req">*</span></label>
+        <input type="time" id="ei-time">
+      </div>
+    </div>
+    <div class="field" style="margin-top:1.1rem;">
+      <label for="ei-witnesses">Names of witnesses (if any)</label>
+      <input type="text" id="ei-witnesses" placeholder="Names of any witnesses">
+    </div>
+    <div class="field">
+      <label for="ei-location">Where exactly did it happen? <span class="req">*</span></label>
+      <input type="text" id="ei-location">
+    </div>
+    <div class="field">
+      <label for="ei-doing">What were you doing at the time? <span class="req">*</span></label>
+      <textarea id="ei-doing"></textarea>
+    </div>
+    <div class="field" style="margin-bottom:0;">
+      <label for="ei-description">Describe step by step what led up to the injury/near miss <span class="req">*</span></label>
+      <textarea id="ei-description"></textarea>
+    </div>
+  </div>
+
+  <div class="section-card">
+    <div class="section-title">Injury Details</div>
+    <div class="field">
+      <label for="ei-prevention">What could have been done to prevent this injury/near miss? <span class="req">*</span></label>
+      <textarea id="ei-prevention"></textarea>
+    </div>
+    <div class="field">
+      <label for="ei-body-parts">What parts of your body were injured? If a near miss, how could you have been hurt? <span class="req">*</span></label>
+      <textarea id="ei-body-parts" style="min-height:60px;"></textarea>
+    </div>
+    <div class="field">
+      <label>Did you see a doctor about this injury/illness?</label>
+      <div style="display:flex;gap:1.5rem;margin-top:0.4rem;">
+        <label class="checkbox-item"><input type="radio" name="ei-saw-doctor" value="Yes"> <span>Yes</span></label>
+        <label class="checkbox-item"><input type="radio" name="ei-saw-doctor" value="No"> <span>No</span></label>
+      </div>
+    </div>
+    <div class="field-row" id="ei-doctor-wrap">
+      <div class="field" style="margin-bottom:0;">
+        <label for="ei-doctor-name">Doctor's name</label>
+        <input type="text" id="ei-doctor-name">
+      </div>
+      <div class="field" style="margin-bottom:0;">
+        <label for="ei-doctor-phone">Doctor's phone number</label>
+        <input type="text" id="ei-doctor-phone">
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field" style="margin-bottom:0;">
+        <label for="ei-doctor-date">Date seen</label>
+        <input type="date" id="ei-doctor-date">
+      </div>
+      <div class="field" style="margin-bottom:0;">
+        <label for="ei-doctor-time">Time</label>
+        <input type="time" id="ei-doctor-time">
+      </div>
+    </div>
+    <div class="field" style="margin-top:1.1rem;">
+      <label>Has this part of your body been injured before?</label>
+      <div style="display:flex;gap:1.5rem;margin-top:0.4rem;">
+        <label class="checkbox-item"><input type="radio" name="ei-prev-injury" value="Yes"> <span>Yes</span></label>
+        <label class="checkbox-item"><input type="radio" name="ei-prev-injury" value="No"> <span>No</span></label>
+      </div>
+    </div>
+    <div class="field-row" id="ei-prev-wrap" style="display:none;">
+      <div class="field" style="margin-bottom:0;">
+        <label for="ei-prev-when">If yes, when?</label>
+        <input type="text" id="ei-prev-when">
+      </div>
+      <div class="field" style="margin-bottom:0;">
+        <label for="ei-prev-supervisor">Supervisor at that time</label>
+        <input type="text" id="ei-prev-supervisor">
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     FORM: SUPERVISOR ACCIDENT INVESTIGATION
+══════════════════════════════════════ -->
+<div id="form-supervisor-accident" class="form-section" style="display:none;">
+  <div class="section-card">
+    <div class="section-title">Injured Person Information</div>
+    <div class="field">
+      <label for="sa-name">Name of injured person <span class="req">*</span></label>
+      <input type="text" id="sa-name">
+    </div>
+    <div class="field-row">
+      <div class="field" style="margin-bottom:0;">
+        <label for="sa-dob">Date of birth</label>
+        <input type="date" id="sa-dob">
+      </div>
+      <div class="field" style="margin-bottom:0;">
+        <label for="sa-phone">Phone number</label>
+        <input type="text" id="sa-phone">
+      </div>
+    </div>
+    <div class="field" style="margin-top:1.1rem;">
+      <label for="sa-address">Address</label>
+      <input type="text" id="sa-address">
+    </div>
+    <div class="field-row">
+      <div class="field" style="margin-bottom:0;">
+        <label for="sa-city">City</label>
+        <input type="text" id="sa-city">
+      </div>
+      <div class="field" style="margin-bottom:0;">
+        <label for="sa-state">State</label>
+        <input type="text" id="sa-state">
+      </div>
+    </div>
+    <div class="field" style="margin-top:1.1rem; margin-bottom:0;">
+      <label>Sex</label>
+      <div style="display:flex;gap:1.5rem;margin-top:0.4rem;">
+        <label class="checkbox-item"><input type="radio" name="sa-sex" value="Male"> <span>Male</span></label>
+        <label class="checkbox-item"><input type="radio" name="sa-sex" value="Female"> <span>Female</span></label>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-card">
+    <div class="section-title">Injury Details</div>
+    <div class="field">
+      <label for="sa-body-part">What part of the body was injured? Describe in detail <span class="req">*</span></label>
+      <textarea id="sa-body-part"></textarea>
+    </div>
+    <div class="field" style="margin-bottom:0;">
+      <label for="sa-nature">What was the nature of the injury? Describe in detail <span class="req">*</span></label>
+      <textarea id="sa-nature"></textarea>
+    </div>
+  </div>
+
+  <div class="section-card">
+    <div class="section-title">Accident Details</div>
+    <div class="field">
+      <label for="sa-description">Describe fully how the accident happened. What was the employee doing prior? What equipment/tools were being used? <span class="req">*</span></label>
+      <textarea id="sa-description"></textarea>
+    </div>
+    <div class="field">
+      <label for="sa-witnesses">Names of all witnesses</label>
+      <textarea id="sa-witnesses" style="min-height:60px;"></textarea>
+    </div>
+    <div class="field-row">
+      <div class="field" style="margin-bottom:0;">
+        <label for="sa-date">Date of event <span class="req">*</span></label>
+        <input type="date" id="sa-date">
+      </div>
+      <div class="field" style="margin-bottom:0;">
+        <label for="sa-time">Time of event <span class="req">*</span></label>
+        <input type="time" id="sa-time">
+      </div>
+    </div>
+    <div class="field" style="margin-top:1.1rem;">
+      <label for="sa-location">Exact location of event <span class="req">*</span></label>
+      <input type="text" id="sa-location">
+    </div>
+    <div class="field" style="margin-bottom:0;">
+      <label for="sa-cause">What caused the event? <span class="req">*</span></label>
+      <textarea id="sa-cause"></textarea>
+    </div>
+  </div>
+
+  <div class="section-card">
+    <div class="section-title">Safety & Follow-up</div>
+    <div class="field">
+      <label for="sa-safety-regs">Were safety regulations in place and used? If not, what was wrong?</label>
+      <textarea id="sa-safety-regs" style="min-height:60px;"></textarea>
+    </div>
+    <div class="field-row">
+      <div class="field" style="margin-bottom:0;">
+        <label for="sa-doctor">Doctor's name (if applicable)</label>
+        <input type="text" id="sa-doctor">
+      </div>
+      <div class="field" style="margin-bottom:0;">
+        <label for="sa-hospital">Hospital name (if applicable)</label>
+        <input type="text" id="sa-hospital">
+      </div>
+    </div>
+    <div class="field" style="margin-top:1.1rem; margin-bottom:0;">
+      <label for="sa-prevention">Recommended preventive action to prevent reoccurrence <span class="req">*</span></label>
+      <textarea id="sa-prevention"></textarea>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     FORM: INCIDENT INVESTIGATION REPORT
+══════════════════════════════════════ -->
+<div id="form-incident-investigation" class="form-section" style="display:none;">
+  <div class="section-card">
+    <div class="section-title">Report Overview</div>
+    <div class="field">
+      <label>This is a report of a: <span class="req">*</span></label>
+      <div class="checkbox-grid" style="margin-top:0.5rem;">
+        <label class="checkbox-item"><input type="radio" name="ii-type" value="Death"> <span>Death</span></label>
+        <label class="checkbox-item"><input type="radio" name="ii-type" value="Lost Time"> <span>Lost Time</span></label>
+        <label class="checkbox-item"><input type="radio" name="ii-type" value="Dr. Visit Only"> <span>Dr. Visit Only</span></label>
+        <label class="checkbox-item"><input type="radio" name="ii-type" value="First Aid Only"> <span>First Aid Only</span></label>
+        <label class="checkbox-item"><input type="radio" name="ii-type" value="Near Miss"> <span>Near Miss</span></label>
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field" style="margin-bottom:0;">
+        <label for="ii-date">Date of incident <span class="req">*</span></label>
+        <input type="date" id="ii-date">
+      </div>
+      <div class="field" style="margin-bottom:0;">
+        <label>This report made by:</label>
+        <div style="display:flex;gap:1rem;flex-wrap:wrap;margin-top:0.4rem;">
+          <label class="checkbox-item"><input type="radio" name="ii-made-by" value="Employee"> <span>Employee</span></label>
+          <label class="checkbox-item"><input type="radio" name="ii-made-by" value="Supervisor"> <span>Supervisor</span></label>
+          <label class="checkbox-item"><input type="radio" name="ii-made-by" value="Team"> <span>Team</span></label>
+          <label class="checkbox-item"><input type="radio" name="ii-made-by" value="Other"> <span>Other</span></label>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-card">
+    <div class="section-title">Step 1 — Injured Employee</div>
+    <div class="field-row">
+      <div class="field" style="margin-bottom:0;">
+        <label for="ii-name">Name <span class="req">*</span></label>
+        <input type="text" id="ii-name">
+      </div>
+      <div class="field" style="margin-bottom:0;">
+        <label for="ii-age">Age</label>
+        <input type="text" id="ii-age" placeholder="Age">
+      </div>
+    </div>
+    <div class="field" style="margin-top:1.1rem;">
+      <label>Sex</label>
+      <div style="display:flex;gap:1.5rem;margin-top:0.4rem;">
+        <label class="checkbox-item"><input type="radio" name="ii-sex" value="Male"> <span>Male</span></label>
+        <label class="checkbox-item"><input type="radio" name="ii-sex" value="Female"> <span>Female</span></label>
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field" style="margin-bottom:0;">
+        <label for="ii-dept">Department <span class="req">*</span></label>
+        <input type="text" id="ii-dept">
+      </div>
+      <div class="field" style="margin-bottom:0;">
+        <label for="ii-jobtitle">Job title at time of incident <span class="req">*</span></label>
+        <input type="text" id="ii-jobtitle">
+      </div>
+    </div>
+    <div class="field" style="margin-top:1.1rem;">
+      <label>This employee works:</label>
+      <div class="checkbox-grid" style="margin-top:0.5rem;">
+        <label class="checkbox-item"><input type="radio" name="ii-emp-type" value="Regular full time"> <span>Regular full time</span></label>
+        <label class="checkbox-item"><input type="radio" name="ii-emp-type" value="Regular part time"> <span>Regular part time</span></label>
+        <label class="checkbox-item"><input type="radio" name="ii-emp-type" value="Seasonal"> <span>Seasonal</span></label>
+        <label class="checkbox-item"><input type="radio" name="ii-emp-type" value="Temporary"> <span>Temporary</span></label>
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field" style="margin-bottom:0;">
+        <label for="ii-months-employer">Months with this employer</label>
+        <input type="text" id="ii-months-employer">
+      </div>
+      <div class="field" style="margin-bottom:0;">
+        <label for="ii-months-job">Months doing this job</label>
+        <input type="text" id="ii-months-job">
+      </div>
+    </div>
+    <div class="field" style="margin-top:1.1rem;">
+      <label for="ii-body-parts">Part of body affected <span class="req">*</span></label>
+      <select id="ii-body-parts">
+        <option value="">— Select body part —</option>
+        <option>Head</option>
+        <option>Face</option>
+        <option>Left Eye</option>
+        <option>Right Eye</option>
+        <option>Teeth</option>
+        <option>Neck</option>
+        <option>Upper Back</option>
+        <option>Lower Back</option>
+        <option>Neck/Back</option>
+        <option>Chest</option>
+        <option>Stomach</option>
+        <option>Waist</option>
+        <option>Left Shoulder</option>
+        <option>Right Shoulder</option>
+        <option>Left Arm</option>
+        <option>Right Arm</option>
+        <option>Left Elbow</option>
+        <option>Right Elbow</option>
+        <option>Left Wrist</option>
+        <option>Right Wrist</option>
+        <option>Left Hand</option>
+        <option>Right Hand</option>
+        <option>Left Hand/Wrist</option>
+        <option>Right Hand/Wrist</option>
+        <option>Fingers</option>
+        <option>Left Thigh</option>
+        <option>Right Thigh</option>
+        <option>Left Knee</option>
+        <option>Right Knee</option>
+        <option>Left Calf</option>
+        <option>Right Calf</option>
+        <option>Left Shin</option>
+        <option>Right Shin</option>
+        <option>Left Leg</option>
+        <option>Right Leg</option>
+        <option>Ankle</option>
+        <option>Left Foot</option>
+        <option>Right Foot</option>
+        <option>Toes</option>
+        <option>Multiple</option>
+        <option>N/A</option>
+        <option>Other</option>
+      </select>
+      <div id="ii-body-other-wrap" style="display:none; margin-top:0.6rem;">
+        <input type="text" id="ii-body-other" placeholder="Please describe...">
+      </div>
+    </div>
+    <div class="field" style="margin-bottom:0;">
+      <label>Nature of injury (most serious): <span class="req">*</span></label>
+      <div class="checkbox-grid" style="margin-top:0.5rem;">
+        <label class="checkbox-item"><input type="radio" name="ii-injury-type" value="Abrasion, scrapes"> <span>Abrasion, scrapes</span></label>
+        <label class="checkbox-item"><input type="radio" name="ii-injury-type" value="Amputation"> <span>Amputation</span></label>
+        <label class="checkbox-item"><input type="radio" name="ii-injury-type" value="Broken bone"> <span>Broken bone</span></label>
+        <label class="checkbox-item"><input type="radio" name="ii-injury-type" value="Bruise"> <span>Bruise</span></label>
+        <label class="checkbox-item"><input type="radio" name="ii-injury-type" value="Burn (heat)"> <span>Burn (heat)</span></label>
+        <label class="checkbox-item"><input type="radio" name="ii-injury-type" value="Burn (chemical)"> <span>Burn (chemical)</span></label>
+        <label class="checkbox-item"><input type="radio" name="ii-injury-type" value="Concussion"> <span>Concussion</span></label>
+        <label class="checkbox-item"><input type="radio" name="ii-injury-type" value="Crushing Injury"> <span>Crushing Injury</span></label>
+        <label class="checkbox-item"><input type="radio" name="ii-injury-type" value="Cut, laceration, puncture"> <span>Cut, laceration, puncture</span></label>
+        <label class="checkbox-item"><input type="radio" name="ii-injury-type" value="Hernia"> <span>Hernia</span></label>
+        <label class="checkbox-item"><input type="radio" name="ii-injury-type" value="Illness"> <span>Illness</span></label>
+        <label class="checkbox-item"><input type="radio" name="ii-injury-type" value="Sprain, strain"> <span>Sprain, strain</span></label>
+        <label class="checkbox-item"><input type="radio" name="ii-injury-type" value="Other"> <span>Other</span></label>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-card">
+    <div class="section-title">Step 2 — Describe the Incident</div>
+    <div class="field-row">
+      <div class="field" style="margin-bottom:0;">
+        <label for="ii-location">Exact location <span class="req">*</span></label>
+        <input type="text" id="ii-location">
+      </div>
+      <div class="field" style="margin-bottom:0;">
+        <label for="ii-time">Exact time <span class="req">*</span></label>
+        <input type="time" id="ii-time">
+      </div>
+    </div>
+    <div class="field" style="margin-top:1.1rem;">
+      <label>What part of employee's workday?</label>
+      <div class="checkbox-grid" style="margin-top:0.5rem;">
+        <label class="checkbox-item"><input type="radio" name="ii-workday-part" value="Entering or leaving work"> <span>Entering or leaving work</span></label>
+        <label class="checkbox-item"><input type="radio" name="ii-workday-part" value="Doing normal work activities"> <span>Normal work activities</span></label>
+        <label class="checkbox-item"><input type="radio" name="ii-workday-part" value="During meal period"> <span>During meal period</span></label>
+        <label class="checkbox-item"><input type="radio" name="ii-workday-part" value="During break"> <span>During break</span></label>
+        <label class="checkbox-item"><input type="radio" name="ii-workday-part" value="Working overtime"> <span>Working overtime</span></label>
+        <label class="checkbox-item"><input type="radio" name="ii-workday-part" value="Other"> <span>Other</span></label>
+      </div>
+    </div>
+    <div class="field">
+      <label for="ii-witnesses">Names of witnesses (if any)</label>
+      <textarea id="ii-witnesses" style="min-height:60px;"></textarea>
+    </div>
+    <div class="field">
+      <label for="ii-ppe">What personal protective equipment was being used (if any)?</label>
+      <input type="text" id="ii-ppe">
+    </div>
+    <div class="field" style="margin-bottom:0;">
+      <label for="ii-description">Describe step-by-step the events that led up to the injury <span class="req">*</span></label>
+      <textarea id="ii-description"></textarea>
+    </div>
+  </div>
+
+  <div class="section-card">
+    <div class="section-title">Step 3 — Why Did the Incident Happen?</div>
+    <label style="margin-bottom:0.75rem;">Unsafe workplace conditions (check all that apply):</label>
+    <div class="checkbox-grid" style="margin-bottom:1rem;">
+      <label class="checkbox-item"><input type="checkbox" name="ii-unsafe-cond" value="Inadequate guard"> <span>Inadequate guard</span></label>
+      <label class="checkbox-item"><input type="checkbox" name="ii-unsafe-cond" value="Unguarded hazard"> <span>Unguarded hazard</span></label>
+      <label class="checkbox-item"><input type="checkbox" name="ii-unsafe-cond" value="Safety device is defective"> <span>Safety device defective</span></label>
+      <label class="checkbox-item"><input type="checkbox" name="ii-unsafe-cond" value="Tool or equipment defective"> <span>Tool/equipment defective</span></label>
+      <label class="checkbox-item"><input type="checkbox" name="ii-unsafe-cond" value="Workstation layout is hazardous"> <span>Hazardous workstation layout</span></label>
+      <label class="checkbox-item"><input type="checkbox" name="ii-unsafe-cond" value="Unsafe lighting"> <span>Unsafe lighting</span></label>
+      <label class="checkbox-item"><input type="checkbox" name="ii-unsafe-cond" value="Unsafe ventilation"> <span>Unsafe ventilation</span></label>
+      <label class="checkbox-item"><input type="checkbox" name="ii-unsafe-cond" value="Lack of PPE"> <span>Lack of PPE</span></label>
+      <label class="checkbox-item"><input type="checkbox" name="ii-unsafe-cond" value="Lack of appropriate equipment"> <span>Lack of equipment/tools</span></label>
+      <label class="checkbox-item"><input type="checkbox" name="ii-unsafe-cond" value="Unsafe clothing"> <span>Unsafe clothing</span></label>
+      <label class="checkbox-item"><input type="checkbox" name="ii-unsafe-cond" value="No training or insufficient training"> <span>No/insufficient training</span></label>
+    </div>
+    <label style="margin-bottom:0.75rem;">Unsafe acts by people (check all that apply):</label>
+    <div class="checkbox-grid" style="margin-bottom:1rem;">
+      <label class="checkbox-item"><input type="checkbox" name="ii-unsafe-acts" value="Operating without permission"> <span>Operating without permission</span></label>
+      <label class="checkbox-item"><input type="checkbox" name="ii-unsafe-acts" value="Operating at unsafe speed"> <span>Operating at unsafe speed</span></label>
+      <label class="checkbox-item"><input type="checkbox" name="ii-unsafe-acts" value="Servicing equipment with power on"> <span>Servicing powered equipment</span></label>
+      <label class="checkbox-item"><input type="checkbox" name="ii-unsafe-acts" value="Making safety device inoperative"> <span>Disabling safety device</span></label>
+      <label class="checkbox-item"><input type="checkbox" name="ii-unsafe-acts" value="Using defective equipment"> <span>Using defective equipment</span></label>
+      <label class="checkbox-item"><input type="checkbox" name="ii-unsafe-acts" value="Using equipment in unapproved way"> <span>Unapproved equipment use</span></label>
+      <label class="checkbox-item"><input type="checkbox" name="ii-unsafe-acts" value="Unsafe lifting"> <span>Unsafe lifting</span></label>
+      <label class="checkbox-item"><input type="checkbox" name="ii-unsafe-acts" value="Unsafe position or posture"> <span>Unsafe position/posture</span></label>
+      <label class="checkbox-item"><input type="checkbox" name="ii-unsafe-acts" value="Distraction, teasing, horseplay"> <span>Distraction/horseplay</span></label>
+      <label class="checkbox-item"><input type="checkbox" name="ii-unsafe-acts" value="Failure to wear PPE"> <span>Failure to wear PPE</span></label>
+      <label class="checkbox-item"><input type="checkbox" name="ii-unsafe-acts" value="Failure to use available equipment"> <span>Failure to use equipment</span></label>
+    </div>
+    <div class="field">
+      <label for="ii-why-conditions">Why did the unsafe conditions exist?</label>
+      <textarea id="ii-why-conditions" style="min-height:60px;"></textarea>
+    </div>
+    <div class="field">
+      <label for="ii-why-acts">Why did the unsafe acts occur?</label>
+      <textarea id="ii-why-acts" style="min-height:60px;"></textarea>
+    </div>
+    <div class="field">
+      <label>Was there a reward that may have encouraged the unsafe conditions or acts?</label>
+      <div style="display:flex;gap:1.5rem;margin-top:0.4rem;">
+        <label class="checkbox-item"><input type="radio" name="ii-reward" value="Yes"> <span>Yes</span></label>
+        <label class="checkbox-item"><input type="radio" name="ii-reward" value="No"> <span>No</span></label>
+      </div>
+    </div>
+    <div class="field" id="ii-reward-desc-wrap" style="display:none;">
+      <label for="ii-reward-desc">If yes, describe:</label>
+      <textarea id="ii-reward-desc" style="min-height:60px;"></textarea>
+    </div>
+    <div class="field">
+      <label>Were the unsafe acts or conditions reported prior to the incident?</label>
+      <div style="display:flex;gap:1.5rem;margin-top:0.4rem;">
+        <label class="checkbox-item"><input type="radio" name="ii-reported-prior" value="Yes"> <span>Yes</span></label>
+        <label class="checkbox-item"><input type="radio" name="ii-reported-prior" value="No"> <span>No</span></label>
+      </div>
+    </div>
+    <div class="field" style="margin-bottom:0;">
+      <label>Have there been similar incidents or near misses prior to this one?</label>
+      <div style="display:flex;gap:1.5rem;margin-top:0.4rem;">
+        <label class="checkbox-item"><input type="radio" name="ii-prior-incidents" value="Yes"> <span>Yes</span></label>
+        <label class="checkbox-item"><input type="radio" name="ii-prior-incidents" value="No"> <span>No</span></label>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-card">
+    <div class="section-title">Step 4 — Prevention</div>
+    <label style="margin-bottom:0.75rem;">What changes do you suggest to prevent this from happening again? (check all that apply):</label>
+    <div class="checkbox-grid" style="margin-bottom:1rem;">
+      <label class="checkbox-item"><input type="checkbox" name="ii-prevention" value="Stop this activity"> <span>Stop this activity</span></label>
+      <label class="checkbox-item"><input type="checkbox" name="ii-prevention" value="Guard the hazard"> <span>Guard the hazard</span></label>
+      <label class="checkbox-item"><input type="checkbox" name="ii-prevention" value="Train the employee(s)"> <span>Train employee(s)</span></label>
+      <label class="checkbox-item"><input type="checkbox" name="ii-prevention" value="Train the supervisor(s)"> <span>Train supervisor(s)</span></label>
+      <label class="checkbox-item"><input type="checkbox" name="ii-prevention" value="Redesign task steps"> <span>Redesign task steps</span></label>
+      <label class="checkbox-item"><input type="checkbox" name="ii-prevention" value="Redesign work station"> <span>Redesign work station</span></label>
+      <label class="checkbox-item"><input type="checkbox" name="ii-prevention" value="Write a new policy/rule"> <span>Write new policy/rule</span></label>
+      <label class="checkbox-item"><input type="checkbox" name="ii-prevention" value="Enforce existing policy"> <span>Enforce existing policy</span></label>
+      <label class="checkbox-item"><input type="checkbox" name="ii-prevention" value="Routinely inspect for the hazard"> <span>Routine hazard inspection</span></label>
+      <label class="checkbox-item"><input type="checkbox" name="ii-prevention" value="Personal Protective Equipment"> <span>PPE</span></label>
+    </div>
+    <div class="field" style="margin-bottom:0;">
+      <label for="ii-prevention-detail">What should be done to carry out the suggestions above? <span class="req">*</span></label>
+      <textarea id="ii-prevention-detail"></textarea>
+    </div>
+  </div>
+
+  <div class="section-card">
+    <div class="section-title">Step 5 — Completed By</div>
+    <div class="field-row">
+      <div class="field" style="margin-bottom:0;">
+        <label for="ii-written-by">Written by <span class="req">*</span></label>
+        <input type="text" id="ii-written-by">
+      </div>
+      <div class="field" style="margin-bottom:0;">
+        <label for="ii-dept-written">Department</label>
+        <input type="text" id="ii-dept-written">
+      </div>
+    </div>
+    <div class="field-row" style="margin-top:1.1rem;">
+      <div class="field" style="margin-bottom:0;">
+        <label for="ii-title-written">Title</label>
+        <input type="text" id="ii-title-written">
+      </div>
+      <div class="field" style="margin-bottom:0;">
+        <label for="ii-date-written">Date</label>
+        <input type="date" id="ii-date-written">
+      </div>
+    </div>
+    <div class="field" style="margin-top:1.1rem;">
+      <label for="ii-team-members">Names of investigation team members</label>
+      <input type="text" id="ii-team-members">
+    </div>
+    <div class="field-row">
+      <div class="field" style="margin-bottom:0;">
+        <label for="ii-reviewed-by">Reviewed by</label>
+        <input type="text" id="ii-reviewed-by">
+      </div>
+      <div class="field" style="margin-bottom:0;">
+        <label for="ii-reviewer-title">Title</label>
+        <input type="text" id="ii-reviewer-title">
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     SCREEN 4 — CONFIRMATION
+══════════════════════════════════════ -->
+<div id="screen-confirm" class="screen">
+  <div class="confirm-card">
+    <div class="confirm-icon">✓</div>
+    <div class="confirm-title">Report Submitted</div>
+    <div class="confirm-sub">Your near miss report has been submitted and emailed to the safety team.</div>
+    <div class="confirm-detail" id="confirm-detail"></div>
+    <button class="btn btn-primary btn-new" onclick="submitAnother()">Submit Another Form</button>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════
+//  CONFIG — Edit these values
+// ═══════════════════════════════════════
+const CONFIG = {
+  appName: 'Safety Forms',          // ← Change this to your custom app name
+  orgName: 'Niewohner Entities',    // ← Your org name
+
+  // Google Apps Script Web App URL
+  appsScriptUrl: 'https://script.google.com/macros/s/AKfycbz0TMRzD2cqgFEt7nhMZJF5BbAelCioYqGcnuh2I4bNP5BPKjg6ZcH2ezqfYqgWIqQ/exec',
+
+  // Destination email per form type
+  emails: {
+    'near-miss': 'jaimeb@jsmmfarms.com',
+    'employee-injury': 'jaimeb@jsmmfarms.com',
+    'supervisor-accident': 'jaimeb@jsmmfarms.com',
+    'incident-investigation': 'jaimeb@jsmmfarms.com',
+  },
+};
+
+// ═══════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════
+let currentUser = { name: '', empId: '' };
+let currentForm = '';
+let accessCode = ''; // Held in memory only until sign-out or refresh
+
+// ═══════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('app-title').textContent = CONFIG.appName;
+  document.title = CONFIG.appName;
+
+  // Set today's date as default
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('f-date').value = today;
+
+  // Category "Other" toggle
+  document.querySelectorAll('input[name="category"]').forEach(r => {
+    r.addEventListener('change', () => {
+      document.getElementById('category-other-wrap').style.display =
+        r.value === 'Other' && r.checked ? 'block' : 'none';
+      if (r.value !== 'Other') document.getElementById('category-other-wrap').style.display = 'none';
+      // recheck
+      const sel = document.querySelector('input[name="category"]:checked');
+      document.getElementById('category-other-wrap').style.display =
+        sel && sel.value === 'Other' ? 'block' : 'none';
+    });
+  });
+
+  // Factor "Other" toggle
+  document.querySelectorAll('input[name="factor"]').forEach(cb => {
+    cb.addEventListener('change', () => {
+      const anyOther = document.querySelector('input[name="factor"][value="Other"]').checked;
+      document.getElementById('factor-other-wrap').style.display = anyOther ? 'block' : 'none';
+    });
+  });
+
+  // Employee injury — prev injury toggle
+  document.querySelectorAll('input[name="ei-prev-injury"]').forEach(r => {
+    r.addEventListener('change', () => {
+      document.getElementById('ei-prev-wrap').style.display =
+        document.querySelector('input[name="ei-prev-injury"]:checked')?.value === 'Yes' ? 'block' : 'none';
+    });
+  });
+
+  // Incident investigation — reward toggle
+  document.querySelectorAll('input[name="ii-reward"]').forEach(r => {
+    r.addEventListener('change', () => {
+      document.getElementById('ii-reward-desc-wrap').style.display =
+        document.querySelector('input[name="ii-reward"]:checked')?.value === 'Yes' ? 'block' : 'none';
+    });
+  });
+
+  // Body part "Other" toggle
+  document.getElementById('ii-body-parts').addEventListener('change', function() {
+    document.getElementById('ii-body-other-wrap').style.display =
+      this.value === 'Other' ? 'block' : 'none';
+  });
+});
+
+// ═══════════════════════════════════════
+//  NAVIGATION
+// ═══════════════════════════════════════
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+async function doLogin() {
+  const name = document.getElementById('login-name').value.trim();
+  const empId = document.getElementById('login-empid').value.trim();
+  const password = document.getElementById('login-password').value;
+  const err = document.getElementById('login-error');
+  if (!name || !empId || !password) {
+    err.textContent = 'Please complete all three login fields.';
+    err.style.display = 'block';
+    return;
+  }
+  const button = document.querySelector('#screen-login .btn-primary');
+  button.disabled = true;
+  err.style.display = 'none';
+  try {
+    // Password checked by Apps Script, not in GitHub's public HTML.
+    await sendAndConfirm({ action: 'login', accessCode: password });
+    accessCode = password;
+    currentUser = { name, empId };
+    document.getElementById('login-password').value = '';
+    document.getElementById('topbar-user').textContent = `${name}  ·  ${empId}`;
+    showScreen('screen-menu');
+  } catch (error) {
+    err.textContent = 'Could not sign in: ' + (error.message || 'Please retry.');
+    err.style.display = 'block';
+    document.getElementById('login-password').value = '';
+  } finally {
+    button.disabled = false;
+  }
+}
+
+function doLogout() {
+  accessCode = '';
+  currentUser = { name: '', empId: '' };
+  document.getElementById('login-name').value = '';
+  document.getElementById('login-empid').value = '';
+  document.getElementById('login-password').value = '';
+  showScreen('screen-login');
+}
+
+const FORM_TITLES = {
+  'near-miss': 'Near Miss Report Form',
+  'employee-injury': "Employee's Report of Injury",
+  'supervisor-accident': 'Supervisor Accident Investigation',
+  'incident-investigation': 'Incident Investigation Report',
+};
+
+// Move form sections into screen-form container on first load
+document.addEventListener('DOMContentLoaded', () => {
+  const container = document.getElementById('other-forms-container');
+  ['form-employee-injury','form-supervisor-accident','form-incident-investigation'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) container.appendChild(el);
+  });
+});
+
+function openForm(formId) {
+  currentForm = formId;
+  document.getElementById('form-header-title').textContent = FORM_TITLES[formId] || 'Form';
+  document.getElementById('form-header-user').textContent =
+    `${currentUser.name}  ·  ${currentUser.empId}`;
+
+  const today = new Date().toISOString().split('T')[0];
+
+  if (formId === 'near-miss') {
+    // Show near-miss fields, hide other form container
+    document.querySelector('.form-body').style.display = 'block';
+    document.getElementById('other-forms-container').style.display = 'none';
+    document.getElementById('f-reporter').placeholder = `${currentUser.name} (pre-filled — clear to report anonymously)`;
+    document.getElementById('f-reporter').value = currentUser.name;
+    document.getElementById('f-date').value = today;
+  } else {
+    // Hide near-miss fields, show the right section
+    document.querySelector('.form-body').style.display = 'none';
+    const container = document.getElementById('other-forms-container');
+    container.style.display = 'block';
+    // Hide all sections first
+    document.querySelectorAll('.form-section').forEach(s => s.style.display = 'none');
+    // Show the right one
+    const sectionId = 'form-' + formId;
+    const section = document.getElementById(sectionId);
+    if (section) section.style.display = 'block';
+
+    // Pre-fill fields
+    if (formId === 'employee-injury') {
+      document.getElementById('ei-name').value = currentUser.name;
+      document.getElementById('ei-date').value = today;
+    } else if (formId === 'incident-investigation') {
+      document.getElementById('ii-date').value = today;
+      document.getElementById('ii-date-written').value = today;
+      document.getElementById('ii-written-by').value = currentUser.name;
+    } else if (formId === 'supervisor-accident') {
+      document.getElementById('sa-date').value = today;
+    }
+  }
+
+  showScreen('screen-form');
+}
+
+function goBack() {
+  showScreen('screen-menu');
+}
+
+function submitAnother() {
+  resetForm();
+  showScreen('screen-menu');
+}
+
+// ═══════════════════════════════════════
+//  FORM RESET
+// ═══════════════════════════════════════
+function resetForm() {
+  document.getElementById('f-reporter').value = '';
+  document.getElementById('f-date').value = new Date().toISOString().split('T')[0];
+  document.getElementById('f-time').value = '';
+  document.getElementById('f-location').value = '';
+  document.getElementById('f-describe').value = '';
+  document.getElementById('f-witnesses').value = '';
+  document.getElementById('f-persons').value = '';
+  document.getElementById('f-jobtitles').value = '';
+  document.getElementById('f-consequences').value = '';
+  document.getElementById('f-actions').value = '';
+  document.getElementById('f-preventive').value = '';
+  document.getElementById('f-category-other').value = '';
+  document.getElementById('f-factor-other').value = '';
+  document.querySelectorAll('input[name="category"]').forEach(r => r.checked = false);
+  document.querySelectorAll('input[name="factor"]').forEach(c => c.checked = false);
+  document.getElementById('category-other-wrap').style.display = 'none';
+  document.getElementById('factor-other-wrap').style.display = 'none';
+  document.getElementById('form-error').style.display = 'none';
+}
+
+// ═══════════════════════════════════════
+//  VALIDATION
+// ═══════════════════════════════════════
+function validateForm() {
+  if (currentForm === 'near-miss') {
+    const required = [
+      { id: 'f-date', label: 'Date' },
+      { id: 'f-time', label: 'Time' },
+      { id: 'f-location', label: 'Location' },
+      { id: 'f-describe', label: 'Description' },
+      { id: 'f-persons', label: 'Person(s) involved' },
+      { id: 'f-consequences', label: 'Potential consequences' },
+      { id: 'f-actions', label: 'Actions taken' },
+      { id: 'f-preventive', label: 'Preventive measures' },
+    ];
+    for (const f of required) {
+      if (!document.getElementById(f.id).value.trim()) return `Please fill in: ${f.label}`;
+    }
+    const cat = document.querySelector('input[name="category"]:checked');
+    if (!cat) return 'Please select a near miss category.';
+    return null;
+  }
+
+  if (currentForm === 'employee-injury') {
+    const required = [
+      { id: 'ei-name', label: 'Your name' },
+      { id: 'ei-jobtitle', label: 'Job title' },
+      { id: 'ei-supervisor', label: 'Supervisor' },
+      { id: 'ei-date', label: 'Date' },
+      { id: 'ei-time', label: 'Time' },
+      { id: 'ei-location', label: 'Location' },
+      { id: 'ei-doing', label: 'What you were doing' },
+      { id: 'ei-description', label: 'Description' },
+      { id: 'ei-prevention', label: 'Prevention' },
+      { id: 'ei-body-parts', label: 'Body parts injured' },
+    ];
+    for (const f of required) {
+      if (!document.getElementById(f.id).value.trim()) return `Please fill in: ${f.label}`;
+    }
+    if (!document.querySelector('input[name="ei-type"]:checked')) return 'Please select report type (Injury, Illness, or Near miss).';
+    return null;
+  }
+
+  if (currentForm === 'supervisor-accident') {
+    const required = [
+      { id: 'sa-name', label: 'Name of injured person' },
+      { id: 'sa-body-part', label: 'Part of body injured' },
+      { id: 'sa-nature', label: 'Nature of injury' },
+      { id: 'sa-description', label: 'Description of accident' },
+      { id: 'sa-date', label: 'Date of event' },
+      { id: 'sa-time', label: 'Time of event' },
+      { id: 'sa-location', label: 'Location' },
+      { id: 'sa-cause', label: 'Cause of event' },
+      { id: 'sa-prevention', label: 'Preventive action' },
+    ];
+    for (const f of required) {
+      if (!document.getElementById(f.id).value.trim()) return `Please fill in: ${f.label}`;
+    }
+    return null;
+  }
+
+  if (currentForm === 'incident-investigation') {
+    const required = [
+      { id: 'ii-name', label: 'Injured employee name' },
+      { id: 'ii-dept', label: 'Department' },
+      { id: 'ii-jobtitle', label: 'Job title' },
+      { id: 'ii-body-parts', label: 'Body parts affected' },
+      { id: 'ii-location', label: 'Location' },
+      { id: 'ii-time', label: 'Time' },
+      { id: 'ii-description', label: 'Description of events' },
+      { id: 'ii-prevention-detail', label: 'Prevention details' },
+      { id: 'ii-written-by', label: 'Written by' },
+      { id: 'ii-date', label: 'Date of incident' },
+    ];
+    for (const f of required) {
+      if (!document.getElementById(f.id).value.trim()) return `Please fill in: ${f.label}`;
+    }
+    if (!document.querySelector('input[name="ii-type"]:checked')) return 'Please select report type.';
+    if (!document.querySelector('input[name="ii-injury-type"]:checked')) return 'Please select nature of injury.';
+    return null;
+  }
+
+  return null;
+}
+
+// ═══════════════════════════════════════
+//  COLLECT DATA
+// ═══════════════════════════════════════
+function getChecked(name) {
+  return Array.from(document.querySelectorAll(`input[name="${name}"]:checked`)).map(c => c.value).join(', ') || 'None';
+}
+function getVal(id) {
+  const el = document.getElementById(id);
+  return el ? el.value.trim() : '';
+}
+
+function collectFormData() {
+  const submittedAt = new Date().toLocaleString();
+
+  if (currentForm === 'near-miss') {
+    const cat = document.querySelector('input[name="category"]:checked');
+    const category = cat && cat.value === 'Other'
+      ? `Other: ${getVal('f-category-other')}` : (cat ? cat.value : '');
+    const factors = Array.from(document.querySelectorAll('input[name="factor"]:checked'))
+      .map(c => c.value === 'Other' ? `Other: ${getVal('f-factor-other')}` : c.value);
+    return {
+      formType: 'Near Miss Report',
+      reporter: getVal('f-reporter') || 'Anonymous',
+      empId: currentUser.empId,
+      date: getVal('f-date'), time: getVal('f-time'),
+      location: getVal('f-location'), description: getVal('f-describe'),
+      witnesses: getVal('f-witnesses') || 'None', category,
+      personsInvolved: getVal('f-persons'), jobTitles: getVal('f-jobtitles') || 'Not specified',
+      consequences: getVal('f-consequences'), actionsTaken: getVal('f-actions'),
+      contributingFactors: factors.join(', ') || 'None', preventiveMeasures: getVal('f-preventive'),
+      submittedAt,
+    };
+  }
+
+  if (currentForm === 'employee-injury') {
+    return {
+      formType: "Employee's Report of Injury",
+      reporter: getVal('ei-name'), empId: currentUser.empId,
+      reportType: getChecked('ei-type'),
+      name: getVal('ei-name'), jobTitle: getVal('ei-jobtitle'),
+      supervisor: getVal('ei-supervisor'), toldSupervisor: getChecked('ei-told-supervisor'),
+      date: getVal('ei-date'), time: getVal('ei-time'),
+      witnesses: getVal('ei-witnesses') || 'None', location: getVal('ei-location'),
+      doing: getVal('ei-doing'), description: getVal('ei-description'),
+      prevention: getVal('ei-prevention'), bodyParts: getVal('ei-body-parts'),
+      sawDoctor: getChecked('ei-saw-doctor'), doctorName: getVal('ei-doctor-name'),
+      doctorPhone: getVal('ei-doctor-phone'), doctorDate: getVal('ei-doctor-date'),
+      doctorTime: getVal('ei-doctor-time'), prevInjury: getChecked('ei-prev-injury'),
+      prevWhen: getVal('ei-prev-when'), prevSupervisor: getVal('ei-prev-supervisor'),
+      submittedAt,
+    };
+  }
+
+  if (currentForm === 'supervisor-accident') {
+    return {
+      formType: 'Supervisor Accident Investigation',
+      reporter: currentUser.name, empId: currentUser.empId,
+      injuredName: getVal('sa-name'), dob: getVal('sa-dob'),
+      phone: getVal('sa-phone'), address: getVal('sa-address'),
+      city: getVal('sa-city'), state: getVal('sa-state'),
+      sex: getChecked('sa-sex'), bodyPart: getVal('sa-body-part'),
+      natureOfInjury: getVal('sa-nature'), description: getVal('sa-description'),
+      witnesses: getVal('sa-witnesses') || 'None',
+      date: getVal('sa-date'), time: getVal('sa-time'),
+      location: getVal('sa-location'), cause: getVal('sa-cause'),
+      safetyRegs: getVal('sa-safety-regs'), doctor: getVal('sa-doctor'),
+      hospital: getVal('sa-hospital'), prevention: getVal('sa-prevention'),
+      submittedAt,
+    };
+  }
+
+  if (currentForm === 'incident-investigation') {
+    const unsafeConds = Array.from(document.querySelectorAll('input[name="ii-unsafe-cond"]:checked')).map(c => c.value);
+    const unsafeActs = Array.from(document.querySelectorAll('input[name="ii-unsafe-acts"]:checked')).map(c => c.value);
+    const prevention = Array.from(document.querySelectorAll('input[name="ii-prevention"]:checked')).map(c => c.value);
+    return {
+      formType: 'Incident Investigation Report',
+      reporter: getVal('ii-written-by') || currentUser.name, empId: currentUser.empId,
+      reportType: getChecked('ii-type'), date: getVal('ii-date'),
+      madeBy: getChecked('ii-made-by'), name: getVal('ii-name'),
+      sex: getChecked('ii-sex'), age: getVal('ii-age'),
+      dept: getVal('ii-dept'), jobTitle: getVal('ii-jobtitle'),
+      empType: getChecked('ii-emp-type'), monthsEmployer: getVal('ii-months-employer'),
+      monthsJob: getVal('ii-months-job'), bodyParts: getVal('ii-body-parts'),
+      injuryType: getChecked('ii-injury-type'), location: getVal('ii-location'),
+      time: getVal('ii-time'), workdayPart: getChecked('ii-workday-part'),
+      witnesses: getVal('ii-witnesses') || 'None', ppe: getVal('ii-ppe'),
+      description: getVal('ii-description'),
+      unsafeConditions: unsafeConds.join(', ') || 'None',
+      unsafeActs: unsafeActs.join(', ') || 'None',
+      whyConditions: getVal('ii-why-conditions'), whyActs: getVal('ii-why-acts'),
+      reward: getChecked('ii-reward'), rewardDesc: getVal('ii-reward-desc'),
+      reportedPrior: getChecked('ii-reported-prior'), priorIncidents: getChecked('ii-prior-incidents'),
+      preventionSuggestions: prevention.join(', ') || 'None',
+      preventionDetail: getVal('ii-prevention-detail'),
+      writtenBy: getVal('ii-written-by'), deptWritten: getVal('ii-dept-written'),
+      titleWritten: getVal('ii-title-written'), dateWritten: getVal('ii-date-written'),
+      teamMembers: getVal('ii-team-members'), reviewedBy: getVal('ii-reviewed-by'),
+      reviewerTitle: getVal('ii-reviewer-title'),
+      submittedAt,
+    };
+  }
+
+  return { submittedAt };
+}
+
+// ═══════════════════════════════════════
+//  PDF GENERATION — CLASSIC FORM STYLE
+// ═══════════════════════════════════════
+function generatePDF(data) {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: 'pt', format: 'letter' });
+  const margin = 40;
+  const pageW = 612;
+  const contentW = pageW - margin * 2;
+  let y = margin;
+
+  const black = [0, 0, 0];
+  const white = [255, 255, 255];
+  const lightGray = [240, 240, 240];
+  const borderGray = [180, 180, 180];
+
+  // ── PAGE BORDER ──
+  function drawPageBorder() {
+    doc.setDrawColor(...borderGray);
+    doc.setLineWidth(1);
+    doc.rect(margin - 10, margin - 10, contentW + 20, 760, 'S');
+  }
+  drawPageBorder();
+
+  // ── HEADER ──
+  function drawHeader(title) {
+    doc.setFillColor(...lightGray);
+    doc.rect(margin - 10, margin - 10, contentW + 20, 50, 'F');
+    doc.setDrawColor(...borderGray);
+    doc.setLineWidth(0.5);
+    doc.rect(margin - 10, margin - 10, contentW + 20, 50, 'S');
+
+    doc.setTextColor(...black);
+    doc.setFontSize(16);
+    doc.setFont('helvetica', 'bold');
+    doc.text(title, pageW / 2, y + 12, { align: 'center' });
+
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
+    doc.text(CONFIG.orgName, pageW / 2, y + 26, { align: 'center' });
+
+    doc.setFontSize(8);
+    doc.text('Submitted: ' + data.submittedAt, pageW / 2, y + 38, { align: 'center' });
+    y += 56;
+  }
+
+  // ── SECTION HEADER ──
+  function sectionHeader(title) {
+    if (y + 20 > 750) { doc.addPage(); y = margin; drawPageBorder(); }
+    doc.setFillColor(...lightGray);
+    doc.rect(margin - 10, y, contentW + 20, 18, 'F');
+    doc.setDrawColor(...borderGray);
+    doc.setLineWidth(0.5);
+    doc.rect(margin - 10, y, contentW + 20, 18, 'S');
+    doc.setTextColor(...black);
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'bold');
+    doc.text(title.toUpperCase(), margin - 4, y + 12);
+    y += 22;
+  }
+
+  // ── SINGLE FULL-WIDTH ROW ──
+  function row(label, value, h) {
+    h = h || 24;
+    const lines = doc.splitTextToSize(value || '', contentW - 10);
+    const needed = Math.max(h, lines.length * 12 + 10);
+    if (y + needed > 750) { doc.addPage(); y = margin; drawPageBorder(); }
+    doc.setDrawColor(...borderGray);
+    doc.setLineWidth(0.5);
+    doc.rect(margin - 10, y, contentW + 20, needed, 'S');
+    doc.setTextColor(80, 80, 80);
+    doc.setFontSize(7.5);
+    doc.setFont('helvetica', 'bold');
+    doc.text(label, margin - 4, y + 9);
+    doc.setTextColor(...black);
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.text(lines, margin - 4, y + 19);
+    y += needed;
+  }
+
+  // ── TWO COLUMN ROW ──
+  function row2(label1, val1, label2, val2) {
+    const h = 24;
+    if (y + h > 750) { doc.addPage(); y = margin; drawPageBorder(); }
+    const half = (contentW + 20) / 2;
+    doc.setDrawColor(...borderGray);
+    doc.setLineWidth(0.5);
+    doc.rect(margin - 10, y, half, h, 'S');
+    doc.rect(margin - 10 + half, y, half, h, 'S');
+    doc.setTextColor(80, 80, 80);
+    doc.setFontSize(7.5);
+    doc.setFont('helvetica', 'bold');
+    doc.text(label1, margin - 4, y + 9);
+    doc.text(label2, margin - 4 + half, y + 9);
+    doc.setTextColor(...black);
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.text(val1 || '', margin - 4, y + 19);
+    doc.text(val2 || '', margin - 4 + half, y + 19);
+    y += h;
+  }
+
+  // ── THREE COLUMN ROW ──
+  function row3(l1, v1, l2, v2, l3, v3) {
+    const h = 24;
+    if (y + h > 750) { doc.addPage(); y = margin; drawPageBorder(); }
+    const third = (contentW + 20) / 3;
+    doc.setDrawColor(...borderGray);
+    doc.setLineWidth(0.5);
+    [0,1,2].forEach(i => doc.rect(margin - 10 + i * third, y, third, h, 'S'));
+    const labels = [l1,l2,l3]; const vals = [v1,v2,v3];
+    labels.forEach((l,i) => {
+      doc.setTextColor(80,80,80); doc.setFontSize(7.5); doc.setFont('helvetica','bold');
+      doc.text(l, margin - 4 + i * third, y + 9);
+      doc.setTextColor(...black); doc.setFontSize(10); doc.setFont('helvetica','normal');
+      doc.text(vals[i] || '', margin - 4 + i * third, y + 19);
+    });
+    y += h;
+  }
+
+  // ── SIGNATURE ROW ──
+  function sigRow(label1, label2) {
+    const h = 36;
+    if (y + h > 750) { doc.addPage(); y = margin; drawPageBorder(); }
+    const half = (contentW + 20) / 2;
+    doc.setDrawColor(...borderGray); doc.setLineWidth(0.5);
+    doc.rect(margin - 10, y, half, h, 'S');
+    doc.rect(margin - 10 + half, y, half, h, 'S');
+    doc.setTextColor(80, 80, 80); doc.setFontSize(7.5); doc.setFont('helvetica','bold');
+    doc.text(label1, margin - 4, y + 9);
+    doc.text(label2, margin - 4 + half, y + 9);
+    y += h;
+  }
+
+  // ══════════════════════════════
+  //  NEAR MISS REPORT
+  // ══════════════════════════════
+  if (data.formType === 'Near Miss Report') {
+    drawHeader('Near Miss Reporting Form');
+    row('Reported by (Optional)', data.reporter === 'Anonymous' ? '' : data.reporter, 24);
+    sectionHeader('Near Miss Details');
+    row2('Date and time of the near miss', data.date + (data.time ? '  ' + data.time : ''), 'Location of the near miss', data.location);
+    row('Describe the near miss', data.description, 48);
+    row('Details of witnesses, if any', data.witnesses, 32);
+    sectionHeader('Near Miss Category');
+    row('Category', data.category, 24);
+    sectionHeader('Person(s) Involved');
+    row('Name(s) of person(s) directly involved', data.personsInvolved, 32);
+    row('Job title(s) of person(s) involved', data.jobTitles, 24);
+    sectionHeader('Description of Potential Consequences');
+    row('Describe the potential consequences if the near miss had resulted in an incident', data.consequences, 48);
+    sectionHeader('Actions Taken');
+    row('Describe any immediate actions taken to prevent an incident after the near miss', data.actionsTaken, 48);
+    sectionHeader('Contributing Factors');
+    row('Contributing factors', data.contributingFactors, 24);
+    sectionHeader('Preventive Measures');
+    row('What preventive measures can be implemented to avoid similar near misses in the future?', data.preventiveMeasures, 48);
+    sigRow('Signature', 'Date');
+
+  // ══════════════════════════════
+  //  EMPLOYEE REPORT OF INJURY
+  // ══════════════════════════════
+  } else if (data.formType === "Employee's Report of Injury") {
+    drawHeader("Employee's Report of Injury Form");
+    row('I am reporting a work related', data.reportType, 24);
+    row3('Your Name', data.name, 'Job Title', data.jobTitle, 'Supervisor', data.supervisor);
+    row2('Have you told your supervisor?', data.toldSupervisor, 'Date of injury/near miss', data.date);
+    row2('Time of injury/near miss', data.time, 'Names of witnesses (if any)', data.witnesses);
+    row('Where, exactly, did it happen?', data.location, 24);
+    row('What were you doing at the time?', data.doing, 32);
+    row('Describe step by step what led up to the injury/near miss', data.description, 56);
+    row('What could have been done to prevent this injury/near miss?', data.prevention, 48);
+    row('What parts of your body were injured? If a near miss, how could you have been hurt?', data.bodyParts, 32);
+    row2('Did you see a doctor about this injury/illness?', data.sawDoctor, 'If yes, whom did you see?', data.doctorName);
+    row2("Doctor's phone number", data.doctorPhone, 'Date seen', data.doctorDate);
+    row2('Has this part of your body been injured before?', data.prevInjury, 'If yes, when?', data.prevWhen);
+    row('Supervisor at that time', data.prevSupervisor, 24);
+    sigRow('Your Signature', 'Date');
+
+  // ══════════════════════════════
+  //  SUPERVISOR ACCIDENT INVESTIGATION
+  // ══════════════════════════════
+  } else if (data.formType === 'Supervisor Accident Investigation') {
+    drawHeader("Supervisor's Accident Investigation Form");
+    row3('Name of Injured Person', data.injuredName, 'Date of Birth', data.dob, 'Telephone Number', data.phone);
+    row3('Address', data.address, 'City', data.city, 'State', data.state);
+    row2('Sex', data.sex, 'Date of Event', data.date);
+    row2('Time of Event', data.time, 'Exact location of event', data.location);
+    row('What part of the body was injured? Describe in detail.', data.bodyPart, 40);
+    row('What was the nature of the injury? Describe in detail.', data.natureOfInjury, 40);
+    row('Describe fully how the accident happened? What was employee doing prior to the event? What equipment/tools were being used?', data.description, 56);
+    row('Names of all witnesses', data.witnesses, 32);
+    row('What caused the event?', data.cause, 40);
+    row('Were safety regulations in place and used? If not, what was wrong?', data.safetyRegs, 32);
+    row2("Doctor's Name", data.doctor, 'Hospital Name', data.hospital);
+    row('Recommended preventive action to take in the future to prevent reoccurrence', data.prevention, 48);
+    sigRow('Supervisor Signature', 'Date');
+
+  // ══════════════════════════════
+  //  INCIDENT INVESTIGATION REPORT
+  // ══════════════════════════════
+  } else if (data.formType === 'Incident Investigation Report') {
+    drawHeader('Incident Investigation Report');
+    row2('This is a report of a', data.reportType, 'Date of incident', data.date);
+    row('This report is made by', data.madeBy, 24);
+    sectionHeader('Step 1: Injured Employee');
+    row3('Name', data.name, 'Age', data.age, 'Sex', data.sex);
+    row2('Department', data.dept, 'Job title at time of incident', data.jobTitle);
+    row3('This employee works', data.empType, 'Months with this employer', data.monthsEmployer, 'Months doing this job', data.monthsJob);
+    row2('Part of body affected', data.bodyParts, 'Nature of injury', data.injuryType);
+    sectionHeader('Step 2: Describe the Incident');
+    row2('Exact location of the incident', data.location, 'Exact time', data.time);
+    row("What part of employee's workday?", data.workdayPart, 24);
+    row('Names of witnesses (if any)', data.witnesses, 32);
+    row('What personal protective equipment was being used (if any)?', data.ppe, 24);
+    row('Describe step-by-step the events that led up to the injury', data.description, 64);
+    sectionHeader('Step 3: Why Did the Incident Happen?');
+    row('Unsafe workplace conditions', data.unsafeConditions, 32);
+    row('Unsafe acts by people', data.unsafeActs, 32);
+    row('Why did the unsafe conditions exist?', data.whyConditions, 40);
+    row('Why did the unsafe acts occur?', data.whyActs, 40);
+    row2('Was there a reward encouraging unsafe conditions/acts?', data.reward, 'If yes, describe', data.rewardDesc);
+    row2('Were unsafe acts/conditions reported prior?', data.reportedPrior, 'Similar incidents prior to this one?', data.priorIncidents);
+    sectionHeader('Step 4: How Can Future Incidents Be Prevented?');
+    row('Prevention suggestions', data.preventionSuggestions, 32);
+    row('What should be done to carry out the suggestions?', data.preventionDetail, 48);
+    sectionHeader('Step 5: Who Completed and Reviewed This Form?');
+    row3('Written by', data.writtenBy, 'Department', data.deptWritten, 'Title', data.titleWritten);
+    row2('Date', data.dateWritten, 'Names of investigation team members', data.teamMembers);
+    row3('Reviewed by', data.reviewedBy, 'Title', data.reviewerTitle, 'Date', '');
+  }
+
+  return doc;
+}
+
+// Submission POST contains personal data in the request BODY, never in a URL.
+// Apps Script's response is cross-origin; use a separate JSONP status lookup
+// containing only a random receipt token to confirm server-side completion.
+function sleep(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
+function statusLookup(ticket) {
+  return new Promise((resolve, reject) => {
+    const callback = '__safetyStatus_' + ticket.replace(/-/g, '');
+    const script = document.createElement('script');
+    let finished = false;
+    const cleanup = () => {
+      delete window[callback];
+      script.remove();
+      clearTimeout(timer);
+    };
+    const timer = setTimeout(() => {
+      if (!finished) { finished = true; cleanup(); reject(new Error('Status lookup timed out')); }
+    }, 9000);
+    window[callback] = result => {
+      if (finished) return;
+      finished = true;
+      cleanup();
+      resolve(result);
+    };
+    script.onerror = () => {
+      if (finished) return;
+      finished = true;
+      cleanup();
+      reject(new Error('Unable to check submission status'));
+    };
+    script.src = CONFIG.appsScriptUrl + '?action=status&ticket=' +
+      encodeURIComponent(ticket) + '&callback=' + encodeURIComponent(callback) +
+      '&r=' + Date.now();
+    document.head.appendChild(script);
+  });
+}
+async function sendAndConfirm(payload) {
+  if (!crypto || !crypto.randomUUID) throw new Error('Secure browser is required.');
+  const ticket = crypto.randomUUID();
+  const body = JSON.stringify({ ...payload, ticket });
+  // text/plain keeps this a simple cross-origin POST without a CORS preflight.
+  // Google's response isn't readable, so final success comes from statusLookup.
+  const post = fetch(CONFIG.appsScriptUrl, {
+    method: 'POST', mode: 'no-cors', credentials: 'omit',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body
+  }).catch(error => { throw new Error('Unable to reach email service: ' + error.message); });
+  // Start status polling while Google processes request.
+  let postFailed = null;
+  post.catch(e => { postFailed = e; });
+  for (let i = 0; i < 50; i++) {
+    await sleep(1800);
+    if (postFailed) throw postFailed;
+    let status;
+    try { status = await statusLookup(ticket); }
+    catch (e) { continue; } // Network errors are retried; never treated as success.
+    if (status && status.state === 'success') return status;
+    if (status && status.state === 'failed') throw new Error(status.message || 'Server rejected submission.');
+  }
+  throw new Error('No delivery confirmation received. Check recipient inbox before retrying to avoid duplicates.');
+}
+function generateExcelBase64(data) {
+  if (!window.XLSX) throw new Error('Excel library did not load.');
+  const headers = Object.keys(data);
+  const values = headers.map(key => String(data[key] == null ? '' : data[key]));
+  // One row per report; ready to copy into a master workbook.
+  const worksheet = XLSX.utils.aoa_to_sheet([headers, values]);
+  worksheet['!cols'] = headers.map(key => ({ wch: Math.max(16, Math.min(36, key.length + 4)) }));
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, 'Report');
+  return XLSX.write(workbook, { bookType: 'xlsx', type: 'base64', compression: true });
+}
+
+// ═══════════════════════════════════════
+//  SUBMIT
+// ═══════════════════════════════════════
+async function submitForm() {
+  const errEl = document.getElementById('form-error');
+  const btn = document.getElementById('submit-btn');
+  const btnText = document.getElementById('submit-btn-text');
+  const spinner = document.getElementById('submit-spinner');
+
+  const validationError = validateForm();
+  if (validationError) {
+    errEl.textContent = validationError;
+    errEl.style.display = 'block';
+    errEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    return;
+  }
+
+  errEl.style.display = 'none';
+  btn.disabled = true;
+  btnText.textContent = 'Submitting...';
+  spinner.style.display = 'block';
+
+  const data = collectFormData();
+
+  try {
+    // Generate PDF
+    const pdf = generatePDF(data);
+    const pdfBase64 = pdf.output('datauristring').split(',')[1];
+    const xlsxBase64 = generateExcelBase64(data);
+
+    await sendAndConfirm({ action: 'submit', accessCode, data, pdfBase64, xlsxBase64 });
+
+    // Show confirmation
+    document.getElementById('confirm-detail').innerHTML = `
+      <div>Form: ${data.formType}</div>
+      <div>Submitted by: ${data.reporter || currentUser.name}</div>
+      <div>Date: ${data.date || data.submittedAt}</div>
+      <div>Attachments: PDF and Excel (.xlsx)</div>
+      <div>Submitted at: ${data.submittedAt}</div>
+    `;
+
+    resetForm();
+    showScreen('screen-confirm');
+
+  } catch (err) {
+    console.error('Submission error:', err);
+    errEl.textContent = 'Submission not confirmed: ' + (err.message || 'Unknown error') + '. Check with the recipient before retrying.';
+    errEl.style.display = 'block';
+  } finally {
+    btn.disabled = false;
+    btnText.textContent = 'Submit Report';
+    spinner.style.display = 'none';
+  }
+}
+
+// Allow Enter key on login
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && document.getElementById('screen-login').classList.contains('active')) {
+    doLogin();
+  }
+});
+</script>
 </body>
 </html>
