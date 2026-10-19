@@ -385,6 +385,8 @@
     .checkbox-grid { grid-template-columns: 1fr; }
     .login-card { padding: 1.75rem 1.5rem; }
   }
+
+.language-picker{display:flex;gap:7px;align-items:center;flex-wrap:wrap;margin:0 0 15px;font:12px 'IBM Plex Sans',sans-serif;color:#6B6760}.lang-btn{font:inherit;border:1px solid #D8D4CC;background:#fff;border-radius:5px;padding:5px 9px;cursor:pointer;color:#1A1916}.lang-btn.active{background:#1A3A2A;color:#fff;border-color:#1A3A2A}.form-header .language-picker{margin:0 0 0 auto}.form-header .language-picker span{display:none}@media(max-width:550px){.form-header{flex-wrap:wrap}.form-header .language-picker{width:100%;justify-content:flex-end}}
 </style>
 </head>
 <body>
@@ -394,6 +396,7 @@
 ══════════════════════════════════════ -->
 <div id="screen-login" class="screen active">
   <div class="login-card">
+<div class="language-picker" aria-label="Language / Idioma"><span>Language / Idioma</span><button type="button" class="lang-btn" data-lang="en" onclick="setLanguage('en')">English</button><button type="button" class="lang-btn" data-lang="es" onclick="setLanguage('es')">Español</button></div>
     <div class="org-label">Niewohner Entities</div>
     <div class="login-title" id="app-title">Safety Forms</div>
     <div class="login-sub">Enter your information to access forms</div>
@@ -431,6 +434,7 @@
     <button class="btn btn-secondary" onclick="doLogout()" style="font-size:13px;padding:0.45rem 0.9rem;">Sign out</button>
   </div>
   <div class="menu-body">
+<div class="language-picker" aria-label="Language / Idioma"><span>Language / Idioma</span><button type="button" class="lang-btn" data-lang="en" onclick="setLanguage('en')">English</button><button type="button" class="lang-btn" data-lang="es" onclick="setLanguage('es')">Español</button></div>
     <div class="menu-heading">Available Forms</div>
 
     <div class="form-card" onclick="openForm('near-miss')">
@@ -485,7 +489,7 @@
 <div id="screen-form" class="screen">
   <div class="form-header">
     <button class="btn-back" onclick="goBack()">← Back</button>
-    <div class="form-header-info">
+    <div class="form-header-info"><div class="language-picker" aria-label="Language / Idioma"><span>Language / Idioma</span><button type="button" class="lang-btn" data-lang="en" onclick="setLanguage('en')">English</button><button type="button" class="lang-btn" data-lang="es" onclick="setLanguage('es')">Español</button></div>
       <div class="form-header-title" id="form-header-title">Form</div>
       <div class="form-header-sub" id="form-header-user"></div>
     </div>
@@ -1201,10 +1205,10 @@ const CONFIG = {
 
   // Destination email per form type
   emails: {
-    'near-miss': 'dylanm@jsmmfarms.com',
-    'employee-injury': 'dylanm@jsmmfarms.com',
-    'supervisor-accident': 'dylanm@jsmmfarms.com',
-    'incident-investigation': 'dylanm@jsmmfarms.com',
+    'near-miss': 'jaimeb@jsmmfarms.com',
+    'employee-injury': 'jaimeb@jsmmfarms.com',
+    'supervisor-accident': 'jaimeb@jsmmfarms.com',
+    'incident-investigation': 'jaimeb@jsmmfarms.com',
   },
 };
 
@@ -1213,6 +1217,350 @@ const CONFIG = {
 // ═══════════════════════════════════════
 let currentUser = { name: '', empId: '' };
 let currentForm = '';
+
+// Bilingual interface only. Stored field values and generated PDF/Excel headings stay English.
+const SPANISH_LABELS = {
+  "Safety Forms": "Formularios de seguridad",
+  "Enter your information to access forms": "Ingrese sus datos para acceder a los formularios",
+  "Full Name": "Nombre completo",
+  "Employee ID": "Número de empleado",
+  "Access Password": "Contraseña de acceso",
+  "Continue": "Continuar",
+  "Please enter your full name and employee ID.": "Ingrese su nombre completo y número de empleado.",
+  "Sign out": "Cerrar sesión",
+  "Available Forms": "Formularios disponibles",
+  "Near Miss Report": "Reporte de casi accidente",
+  "Report a near miss incident or unsafe condition": "Reporte un casi accidente o una condición insegura",
+  "Employee Report of Injury": "Reporte de lesión del empleado",
+  "Report a work-related injury, illness, or near miss": "Reporte una lesión, enfermedad o casi accidente relacionado con el trabajo",
+  "Supervisor Accident Investigation": "Investigación de accidente del supervisor",
+  "Supervisor's investigation report for accidents": "Reporte de investigación de accidentes del supervisor",
+  "Incident Investigation Report": "Reporte de investigación de incidentes",
+  "Detailed investigation for serious injuries or incidents": "Investigación detallada de lesiones graves o incidentes",
+  "← Back": "← Volver",
+  "Form": "Formulario",
+  "Reporter (optional)": "Persona que reporta (opcional)",
+  "Reporter": "Persona que reporta",
+  "Reported by (optional — leave blank to report anonymously)": "Reportado por (opcional; deje en blanco para reportar de manera anónima)",
+  "You may leave this blank to submit anonymously. Your employee ID will not appear on the report.": "Puede dejar este campo en blanco para reportar de manera anónima. Su número de empleado no aparecerá en el reporte.",
+  "Near Miss Details": "Detalles del casi accidente",
+  "Date of near miss": "Fecha del casi accidente",
+  "Time of near miss": "Hora del casi accidente",
+  "Location of the near miss": "Lugar del casi accidente",
+  "Describe the near miss": "Describa el casi accidente",
+  "Details of witnesses, if any": "Datos de los testigos, si los hay",
+  "Category": "Categoría",
+  "Near Miss Category": "Categoría del casi accidente",
+  "Select the appropriate category": "Seleccione la categoría correspondiente",
+  "Slip, Trip, or Fall": "Resbalón, tropiezo o caída",
+  "Equipment or Machinery Malfunction": "Falla de equipo o maquinaria",
+  "Unsafe Work Conditions": "Condiciones de trabajo inseguras",
+  "Hazardous Material Exposure": "Exposición a materiales peligrosos",
+  "Communication Failure": "Falla de comunicación",
+  "Procedural Error": "Error de procedimiento",
+  "Other": "Otro",
+  "Persons Involved": "Personas involucradas",
+  "Person(s) Involved": "Persona(s) involucrada(s)",
+  "Name(s) of person(s) directly involved": "Nombre de las personas directamente involucradas",
+  "Job title(s) of person(s) involved": "Puesto(s) de las personas involucradas",
+  "Potential Consequences": "Posibles consecuencias",
+  "Describe the potential consequences if this had resulted in an incident": "Describa las posibles consecuencias si esto hubiera resultado en un incidente",
+  "Actions Taken": "Medidas tomadas",
+  "Describe any immediate actions taken to prevent an incident": "Describa las medidas inmediatas tomadas para evitar un incidente",
+  "Contributing Factors": "Factores que contribuyeron",
+  "Were there any contributing factors? Select all that apply:": "¿Hubo factores que contribuyeron? Seleccione todos los que correspondan:",
+  "Inadequate training": "Capacitación inadecuada",
+  "Equipment failure": "Falla del equipo",
+  "Unsafe work conditions": "Condiciones de trabajo inseguras",
+  "Poor housekeeping": "Falta de orden y limpieza",
+  "Human error": "Error humano",
+  "Lack of supervision": "Falta de supervisión",
+  "Lack of communication": "Falta de comunicación",
+  "Time pressure": "Presión de tiempo",
+  "Preventive Measures": "Medidas preventivas",
+  "What preventive measures can be implemented to avoid similar near misses?": "¿Qué medidas preventivas se pueden implementar para evitar casi accidentes similares?",
+  "Cancel": "Cancelar",
+  "Submit Report": "Enviar reporte",
+  "Report Type": "Tipo de reporte",
+  "I am reporting a work related:": "Estoy reportando un evento relacionado con el trabajo:",
+  "Injury": "Lesión",
+  "Illness": "Enfermedad",
+  "Near miss": "Casi accidente",
+  "Employee Information": "Información del empleado",
+  "Your Name": "Su nombre",
+  "Job Title": "Puesto de trabajo",
+  "Supervisor": "Supervisor",
+  "Have you told your supervisor about this injury/near miss?": "¿Informó a su supervisor sobre esta lesión o casi accidente?",
+  "Yes": "Sí",
+  "No": "No",
+  "Incident Details": "Detalles del incidente",
+  "Date of injury/near miss": "Fecha de la lesión o casi accidente",
+  "Time": "Hora",
+  "Names of witnesses (if any)": "Nombres de testigos (si los hay)",
+  "Where exactly did it happen?": "¿Dónde ocurrió exactamente?",
+  "What were you doing at the time?": "¿Qué estaba haciendo en ese momento?",
+  "Describe step by step what led up to the injury/near miss": "Describa paso a paso lo que ocurrió antes de la lesión o casi accidente",
+  "Injury Details": "Detalles de la lesión",
+  "What could have been done to prevent this injury/near miss?": "¿Qué se pudo haber hecho para prevenir esta lesión o casi accidente?",
+  "What parts of your body were injured? If a near miss, how could you have been hurt?": "¿Qué partes de su cuerpo resultaron lesionadas? Si fue un casi accidente, ¿cómo podría haberse lesionado?",
+  "Did you see a doctor about this injury/illness?": "¿Consultó a un médico por esta lesión o enfermedad?",
+  "Doctor's name": "Nombre del médico",
+  "Doctor's phone number": "Teléfono del médico",
+  "Date seen": "Fecha de consulta",
+  "Has this part of your body been injured before?": "¿Se ha lesionado antes esta parte del cuerpo?",
+  "If yes, when?": "Si respondió sí, ¿cuándo?",
+  "Supervisor at that time": "Supervisor en ese momento",
+  "Injured Person Information": "Información de la persona lesionada",
+  "Name of injured person": "Nombre de la persona lesionada",
+  "Date of birth": "Fecha de nacimiento",
+  "Phone number": "Número de teléfono",
+  "Address": "Dirección",
+  "City": "Ciudad",
+  "State": "Estado",
+  "Sex": "Sexo",
+  "Male": "Masculino",
+  "Female": "Femenino",
+  "What part of the body was injured? Describe in detail": "¿Qué parte del cuerpo resultó lesionada? Describa detalladamente",
+  "What was the nature of the injury? Describe in detail": "¿Qué tipo de lesión ocurrió? Describa detalladamente",
+  "Accident Details": "Detalles del accidente",
+  "Describe fully how the accident happened. What was the employee doing prior? What equipment/tools were being used?": "Describa cómo ocurrió el accidente. ¿Qué hacía el empleado antes? ¿Qué equipos o herramientas utilizaba?",
+  "Names of all witnesses": "Nombres de todos los testigos",
+  "Date of event": "Fecha del evento",
+  "Time of event": "Hora del evento",
+  "Exact location of event": "Lugar exacto del evento",
+  "What caused the event?": "¿Qué causó el evento?",
+  "Safety & Follow-up": "Seguridad y seguimiento",
+  "Were safety regulations in place and used? If not, what was wrong?": "¿Existían y se seguían las normas de seguridad? Si no, ¿qué falló?",
+  "Doctor's name (if applicable)": "Nombre del médico (si corresponde)",
+  "Hospital name (if applicable)": "Nombre del hospital (si corresponde)",
+  "Recommended preventive action to prevent reoccurrence": "Medidas preventivas recomendadas para evitar que vuelva a ocurrir",
+  "Report Overview": "Resumen del reporte",
+  "This is a report of a:": "Este reporte corresponde a:",
+  "Death": "Fallecimiento",
+  "Lost Time": "Tiempo laboral perdido",
+  "Dr. Visit Only": "Solo consulta médica",
+  "First Aid Only": "Solo primeros auxilios",
+  "Near Miss": "Casi accidente",
+  "Date of incident": "Fecha del incidente",
+  "This report made by:": "Este reporte fue elaborado por:",
+  "Employee": "Empleado",
+  "Team": "Equipo",
+  "Step 1 — Injured Employee": "Paso 1 — Empleado lesionado",
+  "Name": "Nombre",
+  "Age": "Edad",
+  "Department": "Departamento",
+  "Job title at time of incident": "Puesto al momento del incidente",
+  "This employee works:": "Este empleado trabaja:",
+  "Regular full time": "Tiempo completo regular",
+  "Regular part time": "Tiempo parcial regular",
+  "Seasonal": "De temporada",
+  "Temporary": "Temporal",
+  "Months with this employer": "Meses con este empleador",
+  "Months doing this job": "Meses desempeñando este trabajo",
+  "Part of body affected": "Parte del cuerpo afectada",
+  "— Select body part —": "— Seleccione la parte del cuerpo —",
+  "Head": "Cabeza",
+  "Face": "Cara",
+  "Left Eye": "Ojo izquierdo",
+  "Right Eye": "Ojo derecho",
+  "Teeth": "Dientes",
+  "Neck": "Cuello",
+  "Upper Back": "Espalda alta",
+  "Lower Back": "Espalda baja",
+  "Neck/Back": "Cuello/espalda",
+  "Chest": "Pecho",
+  "Stomach": "Abdomen",
+  "Waist": "Cintura",
+  "Left Shoulder": "Hombro izquierdo",
+  "Right Shoulder": "Hombro derecho",
+  "Left Arm": "Brazo izquierdo",
+  "Right Arm": "Brazo derecho",
+  "Left Elbow": "Codo izquierdo",
+  "Right Elbow": "Codo derecho",
+  "Left Wrist": "Muñeca izquierda",
+  "Right Wrist": "Muñeca derecha",
+  "Left Hand": "Mano izquierda",
+  "Right Hand": "Mano derecha",
+  "Left Hand/Wrist": "Mano/muñeca izquierda",
+  "Right Hand/Wrist": "Mano/muñeca derecha",
+  "Fingers": "Dedos de la mano",
+  "Left Thigh": "Muslo izquierdo",
+  "Right Thigh": "Muslo derecho",
+  "Left Knee": "Rodilla izquierda",
+  "Right Knee": "Rodilla derecha",
+  "Left Calf": "Pantorrilla izquierda",
+  "Right Calf": "Pantorrilla derecha",
+  "Left Shin": "Espinilla izquierda",
+  "Right Shin": "Espinilla derecha",
+  "Left Leg": "Pierna izquierda",
+  "Right Leg": "Pierna derecha",
+  "Ankle": "Tobillo",
+  "Left Foot": "Pie izquierdo",
+  "Right Foot": "Pie derecho",
+  "Toes": "Dedos del pie",
+  "Multiple": "Múltiples",
+  "N/A": "No aplica",
+  "Nature of injury (most serious):": "Tipo de lesión (la más grave):",
+  "Abrasion, scrapes": "Abrasiones, raspaduras",
+  "Amputation": "Amputación",
+  "Broken bone": "Fractura",
+  "Bruise": "Moretón",
+  "Burn (heat)": "Quemadura (calor)",
+  "Burn (chemical)": "Quemadura (química)",
+  "Concussion": "Conmoción cerebral",
+  "Crushing Injury": "Lesión por aplastamiento",
+  "Cut, laceration, puncture": "Corte, laceración o punción",
+  "Hernia": "Hernia",
+  "Sprain, strain": "Esguince o distensión muscular",
+  "Step 2 — Describe the Incident": "Paso 2 — Describa el incidente",
+  "Exact location": "Lugar exacto",
+  "Exact time": "Hora exacta",
+  "What part of employee's workday?": "¿En qué parte de la jornada laboral ocurrió?",
+  "Entering or leaving work": "Al entrar o salir del trabajo",
+  "Normal work activities": "Durante las actividades habituales",
+  "During meal period": "Durante el almuerzo",
+  "During break": "Durante un descanso",
+  "Working overtime": "Durante horas extras",
+  "What personal protective equipment was being used (if any)?": "¿Qué equipo de protección personal se utilizaba (si alguno)?",
+  "Describe step-by-step the events that led up to the injury": "Describa paso a paso los eventos previos a la lesión",
+  "Step 3 — Why Did the Incident Happen?": "Paso 3 — ¿Por qué ocurrió el incidente?",
+  "Unsafe workplace conditions (check all that apply):": "Condiciones inseguras del lugar de trabajo (seleccione todas las que correspondan):",
+  "Inadequate guard": "Protección insuficiente",
+  "Unguarded hazard": "Peligro sin protección",
+  "Safety device defective": "Dispositivo de seguridad defectuoso",
+  "Tool/equipment defective": "Herramienta o equipo defectuoso",
+  "Hazardous workstation layout": "Distribución peligrosa del área de trabajo",
+  "Unsafe lighting": "Iluminación insegura",
+  "Unsafe ventilation": "Ventilación insegura",
+  "Lack of PPE": "Falta de equipo de protección personal",
+  "Lack of equipment/tools": "Falta de equipos o herramientas",
+  "Unsafe clothing": "Ropa insegura",
+  "No/insufficient training": "Capacitación inexistente o insuficiente",
+  "Unsafe acts by people (check all that apply):": "Actos inseguros de las personas (seleccione todos los que correspondan):",
+  "Operating without permission": "Operar sin autorización",
+  "Operating at unsafe speed": "Operar a velocidad insegura",
+  "Servicing powered equipment": "Dar mantenimiento a equipo energizado",
+  "Disabling safety device": "Desactivar un dispositivo de seguridad",
+  "Using defective equipment": "Usar equipo defectuoso",
+  "Unapproved equipment use": "Uso no autorizado del equipo",
+  "Unsafe lifting": "Levantar cargas de forma insegura",
+  "Unsafe position/posture": "Posición o postura insegura",
+  "Distraction/horseplay": "Distracción o juegos bruscos",
+  "Failure to wear PPE": "No usar equipo de protección personal",
+  "Failure to use equipment": "No utilizar el equipo disponible",
+  "Why did the unsafe conditions exist?": "¿Por qué existían las condiciones inseguras?",
+  "Why did the unsafe acts occur?": "¿Por qué ocurrieron los actos inseguros?",
+  "Was there a reward that may have encouraged the unsafe conditions or acts?": "¿Había algún incentivo que pudiera haber fomentado las condiciones o actos inseguros?",
+  "If yes, describe:": "Si respondió sí, describa:",
+  "Were the unsafe acts or conditions reported prior to the incident?": "¿Se habían reportado los actos o condiciones inseguros antes del incidente?",
+  "Have there been similar incidents or near misses prior to this one?": "¿Han ocurrido incidentes o casi accidentes similares anteriormente?",
+  "Step 4 — Prevention": "Paso 4 — Prevención",
+  "What changes do you suggest to prevent this from happening again? (check all that apply):": "¿Qué cambios sugiere para evitar que vuelva a ocurrir? (Seleccione todos los que correspondan):",
+  "Stop this activity": "Suspender esta actividad",
+  "Guard the hazard": "Proteger el peligro",
+  "Train employee(s)": "Capacitar al personal",
+  "Train supervisor(s)": "Capacitar a los supervisores",
+  "Redesign task steps": "Rediseñar los pasos de la tarea",
+  "Redesign work station": "Rediseñar el puesto de trabajo",
+  "Write new policy/rule": "Crear una nueva política o regla",
+  "Enforce existing policy": "Hacer cumplir la política existente",
+  "Routine hazard inspection": "Inspección periódica de peligros",
+  "PPE": "Equipo de protección personal",
+  "What should be done to carry out the suggestions above?": "¿Qué debe hacerse para implementar las sugerencias anteriores?",
+  "Step 5 — Completed By": "Paso 5 — Elaborado por",
+  "Written by": "Elaborado por",
+  "Title": "Cargo",
+  "Date": "Fecha",
+  "Names of investigation team members": "Nombres de los integrantes del equipo de investigación",
+  "Reviewed by": "Revisado por",
+  "Report Submitted": "Reporte enviado",
+  "Your near miss report has been submitted and emailed to the safety team.": "Su reporte se envió por correo electrónico al equipo de seguridad.",
+  "Submit Another Form": "Enviar otro formulario",
+  "First Last": "Nombre y apellido",
+  "e.g. EMP-1234": "p. ej., EMP-1234",
+  "Enter access password": "Ingrese la contraseña de acceso",
+  "Name will pre-fill from login if left blank": "El nombre se completará desde el inicio de sesión si se deja en blanco",
+  "Building, area, or specific location": "Edificio, área o ubicación específica",
+  "Provide a detailed description of what happened...": "Describa detalladamente lo que ocurrió...",
+  "Name(s) and contact info of any witnesses": "Nombres e información de contacto de los testigos",
+  "Specify category...": "Especifique la categoría...",
+  "Full names of everyone directly involved": "Nombres completos de las personas directamente involucradas",
+  "e.g. Equipment Operator, Field Supervisor": "p. ej., Operador de equipo, supervisor de campo",
+  "What injury, damage, or loss could have occurred?": "¿Qué lesión, daño o pérdida podría haber ocurrido?",
+  "What was done immediately after the near miss was identified?": "¿Qué se hizo inmediatamente después de identificar el casi accidente?",
+  "Specify contributing factor...": "Especifique el factor que contribuyó...",
+  "Recommendations to prevent recurrence...": "Recomendaciones para evitar que se repita...",
+  "Names of any witnesses": "Nombres de testigos",
+  "Please complete all three login fields.": "Complete los tres campos de inicio de sesión.",
+  "Please select a near miss category.": "Seleccione una categoría del casi accidente.",
+  "Please select report type (Injury, Illness, or Near miss).": "Seleccione el tipo de reporte (lesión, enfermedad o casi accidente).",
+  "Please select report type.": "Seleccione el tipo de reporte.",
+  "Please select nature of injury.": "Seleccione el tipo de lesión.",
+  "Excel library did not load.": "No se pudo cargar la biblioteca de Excel.",
+  "Submitting...": "Enviando...",
+  "Submitted by:": "Enviado por:",
+  "Submitted at:": "Enviado el:",
+  "Attachments: PDF and Excel (.xlsx)": "Archivos adjuntos: PDF y Excel (.xlsx)",
+  "Could not sign in: ": "No se pudo iniciar sesión: ",
+  "Please retry.": "Inténtelo de nuevo.",
+  "Submission not confirmed: ": "No se pudo confirmar el envío: ",
+  "Unknown error": "Error desconocido",
+  "Check with the recipient before retrying.": "Consulte con el destinatario antes de volver a intentarlo.",
+  "Location": "Lugar",
+  "Description": "Descripción",
+  "Person(s) involved": "Personas involucradas",
+  "Potential consequences": "Posibles consecuencias",
+  "Actions taken": "Medidas tomadas",
+  "Preventive measures": "Medidas preventivas",
+  "Your name": "Su nombre",
+  "Job title": "Puesto",
+  "What you were doing": "Lo que estaba haciendo",
+  "Prevention": "Prevención",
+  "Body parts injured": "Partes del cuerpo lesionadas",
+  "Part of body injured": "Parte del cuerpo lesionada",
+  "Nature of injury": "Tipo de lesión",
+  "Description of accident": "Descripción del accidente",
+  "Cause of event": "Causa del evento",
+  "Preventive action": "Medida preventiva",
+  "Injured employee name": "Nombre del empleado lesionado",
+  "Body parts affected": "Partes del cuerpo afectadas",
+  "Description of events": "Descripción de los eventos",
+  "Prevention details": "Detalles de prevención"
+};
+let uiLanguage = 'en';
+const originalText = new WeakMap();
+const originalAttributes = new WeakMap();
+function t(en) { return uiLanguage === 'es' ? (SPANISH_LABELS[en] || en) : en; }
+function translateUI() {
+  document.documentElement.lang = uiLanguage;
+  const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+  let node;
+  while ((node = walker.nextNode())) {
+    if (node.parentElement?.closest('script,style,.language-picker')) continue;
+    if (!originalText.has(node)) originalText.set(node,node.nodeValue);
+    const original = originalText.get(node);
+    const trimmed = original.trim();
+    if (trimmed && SPANISH_LABELS[trimmed]) node.nodeValue = uiLanguage === 'es' ? original.replace(trimmed,SPANISH_LABELS[trimmed]) : original;
+  }
+  document.querySelectorAll('[placeholder]').forEach(el => {
+    if (!originalAttributes.has(el)) originalAttributes.set(el,el.getAttribute('placeholder'));
+    const original = originalAttributes.get(el);
+    el.placeholder = t(original);
+  });
+  document.querySelectorAll('.lang-btn').forEach(el => {
+    const selected = el.dataset.lang === uiLanguage;
+    el.classList.toggle('active',selected);
+    el.setAttribute('aria-pressed',String(selected));
+  });
+  if (currentForm) document.getElementById('form-header-title').textContent = t(FORM_TITLES[currentForm] || 'Form');
+}
+function setLanguage(lang) {
+  uiLanguage = lang === 'es' ? 'es' : 'en';
+  translateUI();
+}
+// Capture original static labels before any other startup callbacks modify fields.
+document.addEventListener('DOMContentLoaded', () => translateUI());
+
 let accessCode = ''; // Held in memory only until sign-out or refresh
 
 // ═══════════════════════════════════════
@@ -1285,7 +1633,7 @@ async function doLogin() {
   const password = document.getElementById('login-password').value;
   const err = document.getElementById('login-error');
   if (!name || !empId || !password) {
-    err.textContent = 'Please complete all three login fields.';
+    err.textContent = t('Please complete all three login fields.');
     err.style.display = 'block';
     return;
   }
@@ -1301,7 +1649,7 @@ async function doLogin() {
     document.getElementById('topbar-user').textContent = `${name}  ·  ${empId}`;
     showScreen('screen-menu');
   } catch (error) {
-    err.textContent = 'Could not sign in: ' + (error.message || 'Please retry.');
+    err.textContent = t('Could not sign in: ') + (error.message || t('Please retry.'));
     err.style.display = 'block';
     document.getElementById('login-password').value = '';
   } finally {
@@ -1336,7 +1684,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function openForm(formId) {
   currentForm = formId;
-  document.getElementById('form-header-title').textContent = FORM_TITLES[formId] || 'Form';
+  document.getElementById('form-header-title').textContent = t(FORM_TITLES[formId] || 'Form');
   document.getElementById('form-header-user').textContent =
     `${currentUser.name}  ·  ${currentUser.empId}`;
 
@@ -1375,6 +1723,7 @@ function openForm(formId) {
   }
 
   showScreen('screen-form');
+  translateUI();
 }
 
 function goBack() {
@@ -1426,10 +1775,10 @@ function validateForm() {
       { id: 'f-preventive', label: 'Preventive measures' },
     ];
     for (const f of required) {
-      if (!document.getElementById(f.id).value.trim()) return `Please fill in: ${f.label}`;
+      if (!document.getElementById(f.id).value.trim()) return `${uiLanguage === 'es' ? 'Complete el campo: ' : 'Please fill in: '}${t(f.label)}`;
     }
     const cat = document.querySelector('input[name="category"]:checked');
-    if (!cat) return 'Please select a near miss category.';
+    if (!cat) return t('Please select a near miss category.');
     return null;
   }
 
@@ -1447,9 +1796,9 @@ function validateForm() {
       { id: 'ei-body-parts', label: 'Body parts injured' },
     ];
     for (const f of required) {
-      if (!document.getElementById(f.id).value.trim()) return `Please fill in: ${f.label}`;
+      if (!document.getElementById(f.id).value.trim()) return `${uiLanguage === 'es' ? 'Complete el campo: ' : 'Please fill in: '}${t(f.label)}`;
     }
-    if (!document.querySelector('input[name="ei-type"]:checked')) return 'Please select report type (Injury, Illness, or Near miss).';
+    if (!document.querySelector('input[name="ei-type"]:checked')) return t('Please select report type (Injury, Illness, or Near miss).');
     return null;
   }
 
@@ -1466,7 +1815,7 @@ function validateForm() {
       { id: 'sa-prevention', label: 'Preventive action' },
     ];
     for (const f of required) {
-      if (!document.getElementById(f.id).value.trim()) return `Please fill in: ${f.label}`;
+      if (!document.getElementById(f.id).value.trim()) return `${uiLanguage === 'es' ? 'Complete el campo: ' : 'Please fill in: '}${t(f.label)}`;
     }
     return null;
   }
@@ -1485,10 +1834,10 @@ function validateForm() {
       { id: 'ii-date', label: 'Date of incident' },
     ];
     for (const f of required) {
-      if (!document.getElementById(f.id).value.trim()) return `Please fill in: ${f.label}`;
+      if (!document.getElementById(f.id).value.trim()) return `${uiLanguage === 'es' ? 'Complete el campo: ' : 'Please fill in: '}${t(f.label)}`;
     }
-    if (!document.querySelector('input[name="ii-type"]:checked')) return 'Please select report type.';
-    if (!document.querySelector('input[name="ii-injury-type"]:checked')) return 'Please select nature of injury.';
+    if (!document.querySelector('input[name="ii-type"]:checked')) return t('Please select report type.');
+    if (!document.querySelector('input[name="ii-injury-type"]:checked')) return t('Please select nature of injury.');
     return null;
   }
 
@@ -1928,7 +2277,7 @@ async function submitForm() {
 
   errEl.style.display = 'none';
   btn.disabled = true;
-  btnText.textContent = 'Submitting...';
+  btnText.textContent = t('Submitting...');
   spinner.style.display = 'block';
 
   const data = collectFormData();
@@ -1942,24 +2291,28 @@ async function submitForm() {
     await sendAndConfirm({ action: 'submit', accessCode, data, pdfBase64, xlsxBase64 });
 
     // Show confirmation
-    document.getElementById('confirm-detail').innerHTML = `
-      <div>Form: ${data.formType}</div>
-      <div>Submitted by: ${data.reporter || currentUser.name}</div>
-      <div>Date: ${data.date || data.submittedAt}</div>
-      <div>Attachments: PDF and Excel (.xlsx)</div>
-      <div>Submitted at: ${data.submittedAt}</div>
-    `;
+    document.getElementById('confirm-detail').textContent = '';
+    [
+      ['Form',data.formType], ['Submitted by:', data.reporter || currentUser.name],
+      ['Date', data.date || data.submittedAt], ['Attachments: PDF and Excel (.xlsx)', ''],
+      ['Submitted at:', data.submittedAt]
+    ].forEach(([label,value]) => {
+      const row = document.createElement('div');
+      row.textContent = t(label) + (value ? ': ' + value : '');
+      document.getElementById('confirm-detail').appendChild(row);
+    });
 
     resetForm();
     showScreen('screen-confirm');
+    translateUI();
 
   } catch (err) {
     console.error('Submission error:', err);
-    errEl.textContent = 'Submission not confirmed: ' + (err.message || 'Unknown error') + '. Check with the recipient before retrying.';
+    errEl.textContent = t('Submission not confirmed: ') + (err.message || t('Unknown error')) + '. ' + t('Check with the recipient before retrying.');
     errEl.style.display = 'block';
   } finally {
     btn.disabled = false;
-    btnText.textContent = 'Submit Report';
+    btnText.textContent = t('Submit Report');
     spinner.style.display = 'none';
   }
 }
