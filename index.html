@@ -380,10 +380,56 @@
     border-top: 1px solid var(--border);
   }
 
+  /* ── SIGNATURE BLOCK (bottom of every form) ── */
+  .sig-wrap {
+    padding: 0 1.5rem;
+    max-width: 700px;
+    margin: 0 auto;
+    width: 100%;
+  }
+  .sig-row {
+    display: grid;
+    grid-template-columns: 1fr 150px;
+    gap: 1rem;
+    align-items: start;
+  }
+  .sig-box {
+    position: relative;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius);
+    background: #fff;
+  }
+  #sig-canvas {
+    display: block;
+    width: 100%;
+    height: 140px;
+    touch-action: none;
+    cursor: crosshair;
+    border-radius: var(--radius);
+  }
+  .sig-hint {
+    position: absolute;
+    left: 14px;
+    right: 14px;
+    bottom: 34px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 4px;
+    font-size: 12px;
+    color: var(--text-muted);
+    font-family: var(--mono);
+    pointer-events: none;
+  }
+  .sig-box.signed .sig-hint { display: none; }
+  .sig-actions { display: flex; justify-content: flex-end; margin-top: 0.4rem; }
+  .sig-actions .btn { padding: 0.3rem 0.8rem; font-size: 12px; }
+
   @media (max-width: 480px) {
     .field-row { grid-template-columns: 1fr; }
     .checkbox-grid { grid-template-columns: 1fr; }
     .login-card { padding: 1.75rem 1.5rem; }
+  }
+  @media (max-width: 400px) {
+    .sig-row { grid-template-columns: 1fr; }
   }
 
 .language-picker{display:flex;gap:7px;align-items:center;flex-wrap:wrap;margin:0 0 15px;font:12px 'IBM Plex Sans',sans-serif;color:#6B6760}.lang-btn{font:inherit;border:1px solid #D8D4CC;background:#fff;border-radius:5px;padding:5px 9px;cursor:pointer;color:#1A1916}.lang-btn.active{background:#1A3A2A;color:#fff;border-color:#1A3A2A}.form-header .language-picker{margin:0 0 0 auto}.form-header .language-picker span{display:none}@media(max-width:550px){.form-header{flex-wrap:wrap}.form-header .language-picker{width:100%;justify-content:flex-end}}
@@ -616,11 +662,34 @@
       </div>
     </div>
 
-    <div style="height:5rem;"></div>
   </div>
 
   <!-- ── OTHER FORM SECTIONS (shown/hidden by openForm) ── -->
   <div id="other-forms-container" style="padding:0 1.5rem; max-width:700px; margin:0 auto; width:100%;">
+  </div>
+
+  <!-- ── SIGNATURE + DATE (required, bottom of every form) ── -->
+  <div class="sig-wrap">
+    <div class="section-card">
+      <div class="section-title">Signature</div>
+      <div class="sig-row">
+        <div>
+          <label id="sig-label">Signature <span class="req">*</span></label>
+          <div class="sig-box" id="sig-box">
+            <canvas id="sig-canvas" aria-labelledby="sig-label"></canvas>
+            <div class="sig-hint">Sign here</div>
+          </div>
+          <div class="sig-actions">
+            <button type="button" class="btn btn-secondary" onclick="clearSignature()">Clear</button>
+          </div>
+        </div>
+        <div>
+          <label for="sig-date">Date <span class="req">*</span></label>
+          <input type="date" id="sig-date">
+        </div>
+      </div>
+    </div>
+    <div style="height:5rem;"></div>
   </div>
 
   <div class="submit-bar">
@@ -1525,7 +1594,13 @@ const SPANISH_LABELS = {
   "Injured employee name": "Nombre del empleado lesionado",
   "Body parts affected": "Partes del cuerpo afectadas",
   "Description of events": "Descripción de los eventos",
-  "Prevention details": "Detalles de prevención"
+  "Prevention details": "Detalles de prevención",
+  // ── Signature block (NEW — Spanish wording should be included in the reviewer's pass) ──
+  "Signature": "Firma",
+  "Sign here": "Firme aquí",
+  "Clear": "Borrar",
+  "Please sign the form.": "Firme el formulario.",
+  "Please enter the signature date.": "Ingrese la fecha de la firma."
 };
 let uiLanguage = 'en';
 const originalText = new WeakMap();
@@ -1564,11 +1639,104 @@ document.addEventListener('DOMContentLoaded', () => translateUI());
 let accessCode = ''; // Held in memory only until sign-out or refresh
 
 // ═══════════════════════════════════════
+//  SIGNATURE PAD
+// ═══════════════════════════════════════
+const sigPad = { ctx: null, drawing: false, hasInk: false, lastW: 0 };
+
+function todayISO() {
+  // Local date (not UTC) so the default never lands on "tomorrow" in the evening.
+  const d = new Date();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return d.getFullYear() + '-' + mm + '-' + dd;
+}
+
+function initSignaturePad() {
+  const c = document.getElementById('sig-canvas');
+  const w = c.clientWidth, h = c.clientHeight;
+  if (!w || !h) return;
+  const ratio = window.devicePixelRatio || 1;
+  c.width = Math.round(w * ratio);
+  c.height = Math.round(h * ratio);
+  const ctx = c.getContext('2d');
+  ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(0, 0, w, h);
+  ctx.lineWidth = 2.2;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.strokeStyle = '#1A1916';
+  sigPad.ctx = ctx;
+  sigPad.drawing = false;
+  sigPad.hasInk = false;
+  sigPad.lastW = w;
+  document.getElementById('sig-box').classList.remove('signed');
+}
+
+function clearSignature() { initSignaturePad(); }
+
+function resetSignatureBlock() {
+  initSignaturePad();
+  document.getElementById('sig-date').value = todayISO();
+}
+
+function sigPoint(e) {
+  const rect = document.getElementById('sig-canvas').getBoundingClientRect();
+  return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+}
+
+function bindSignaturePad() {
+  const c = document.getElementById('sig-canvas');
+  c.addEventListener('pointerdown', e => {
+    if (!sigPad.ctx) initSignaturePad();
+    if (!sigPad.ctx) return;
+    e.preventDefault();
+    c.setPointerCapture(e.pointerId);
+    sigPad.drawing = true;
+    const p = sigPoint(e);
+    sigPad.ctx.beginPath();
+    sigPad.ctx.moveTo(p.x, p.y);
+    // A tap leaves a dot.
+    sigPad.ctx.lineTo(p.x + 0.01, p.y + 0.01);
+    sigPad.ctx.stroke();
+    sigPad.hasInk = true;
+    document.getElementById('sig-box').classList.add('signed');
+  });
+  c.addEventListener('pointermove', e => {
+    if (!sigPad.drawing) return;
+    e.preventDefault();
+    const p = sigPoint(e);
+    sigPad.ctx.lineTo(p.x, p.y);
+    sigPad.ctx.stroke();
+  });
+  const stop = e => {
+    if (!sigPad.drawing) return;
+    sigPad.drawing = false;
+    try { c.releasePointerCapture(e.pointerId); } catch (_) {}
+  };
+  c.addEventListener('pointerup', stop);
+  c.addEventListener('pointercancel', stop);
+  c.addEventListener('pointerleave', stop);
+  // Rotating a phone resizes the pad. Only rebuild it if nothing has been signed yet.
+  window.addEventListener('resize', () => {
+    if (document.getElementById('screen-form').classList.contains('active') &&
+        !sigPad.hasInk && c.clientWidth !== sigPad.lastW) initSignaturePad();
+  });
+}
+
+function signatureCapture() {
+  const c = document.getElementById('sig-canvas');
+  return { img: c.toDataURL('image/png'), w: c.width, h: c.height };
+}
+
+// ═══════════════════════════════════════
 //  INIT
 // ═══════════════════════════════════════
 document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('app-title').textContent = CONFIG.appName;
   document.title = CONFIG.appName;
+
+  bindSignaturePad();
 
   // Set today's date as default
   const today = new Date().toISOString().split('T')[0];
@@ -1723,6 +1891,7 @@ function openForm(formId) {
   }
 
   showScreen('screen-form');
+  resetSignatureBlock();   // must run after the screen is visible so the canvas has a width
   translateUI();
 }
 
@@ -1757,12 +1926,24 @@ function resetForm() {
   document.getElementById('category-other-wrap').style.display = 'none';
   document.getElementById('factor-other-wrap').style.display = 'none';
   document.getElementById('form-error').style.display = 'none';
+  document.getElementById('sig-date').value = todayISO();
+  sigPad.hasInk = false;
+  document.getElementById('sig-box').classList.remove('signed');
 }
 
 // ═══════════════════════════════════════
 //  VALIDATION
 // ═══════════════════════════════════════
+// Signature + date are required on every form; checked after the form's own fields.
 function validateForm() {
+  const fieldError = validateFormFields();
+  if (fieldError) return fieldError;
+  if (!sigPad.hasInk) return t('Please sign the form.');
+  if (!getVal('sig-date')) return t('Please enter the signature date.');
+  return null;
+}
+
+function validateFormFields() {
   if (currentForm === 'near-miss') {
     const required = [
       { id: 'f-date', label: 'Date' },
@@ -1953,7 +2134,8 @@ function collectFormData() {
 // ═══════════════════════════════════════
 //  PDF GENERATION — CLASSIC FORM STYLE
 // ═══════════════════════════════════════
-function generatePDF(data) {
+// sig = { img: dataURL, w: pixelWidth, h: pixelHeight } captured from the signature pad.
+function generatePDF(data, sig) {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ unit: 'pt', format: 'letter' });
   const margin = 40;
@@ -2071,17 +2253,25 @@ function generatePDF(data) {
     y += h;
   }
 
-  // ── SIGNATURE ROW ──
+  // ── SIGNATURE ROW (signature image on the left, signed date beside it) ──
   function sigRow(label1, label2) {
-    const h = 36;
+    const h = 60;
     if (y + h > 750) { doc.addPage(); y = margin; drawPageBorder(); }
-    const half = (contentW + 20) / 2;
+    const total = contentW + 20;
+    const left = total * 0.65;
     doc.setDrawColor(...borderGray); doc.setLineWidth(0.5);
-    doc.rect(margin - 10, y, half, h, 'S');
-    doc.rect(margin - 10 + half, y, half, h, 'S');
+    doc.rect(margin - 10, y, left, h, 'S');
+    doc.rect(margin - 10 + left, y, total - left, h, 'S');
     doc.setTextColor(80, 80, 80); doc.setFontSize(7.5); doc.setFont('helvetica','bold');
     doc.text(label1, margin - 4, y + 9);
-    doc.text(label2, margin - 4 + half, y + 9);
+    doc.text(label2, margin - 4 + left, y + 9);
+    if (sig && sig.img) {
+      const maxW = left - 16, maxH = 42;
+      const scale = Math.min(maxW / sig.w, maxH / sig.h);
+      doc.addImage(sig.img, 'PNG', margin - 4, y + 14, sig.w * scale, sig.h * scale);
+    }
+    doc.setTextColor(...black); doc.setFontSize(10); doc.setFont('helvetica','normal');
+    doc.text(data.signatureDate || '', margin - 4 + left, y + 34);
     y += h;
   }
 
@@ -2181,6 +2371,7 @@ function generatePDF(data) {
     row3('Written by', data.writtenBy, 'Department', data.deptWritten, 'Title', data.titleWritten);
     row2('Date', data.dateWritten, 'Names of investigation team members', data.teamMembers);
     row3('Reviewed by', data.reviewedBy, 'Title', data.reviewerTitle, 'Date', '');
+    sigRow('Signature', 'Date');
   }
 
   return doc;
@@ -2281,10 +2472,14 @@ async function submitForm() {
   spinner.style.display = 'block';
 
   const data = collectFormData();
+  // Signature image goes into the PDF only. The Excel row gets a text marker plus the date,
+  // because a drawn signature is far too large for a spreadsheet cell.
+  data.signature = 'Signed (image in PDF)';
+  data.signatureDate = getVal('sig-date');
 
   try {
     // Generate PDF
-    const pdf = generatePDF(data);
+    const pdf = generatePDF(data, signatureCapture());
     const pdfBase64 = pdf.output('datauristring').split(',')[1];
     const xlsxBase64 = generateExcelBase64(data);
 
