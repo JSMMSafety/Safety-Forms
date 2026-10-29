@@ -423,6 +423,16 @@
   .sig-actions { display: flex; justify-content: flex-end; margin-top: 0.4rem; }
   .sig-actions .btn { padding: 0.3rem 0.8rem; font-size: 12px; }
 
+  /* ── FORM 50 (Choice of Doctor) ── */
+  .f50-notice { border: 1px solid var(--border); border-radius: var(--radius); padding: 0.6rem 0.85rem; margin-bottom: 1.25rem; background: var(--bg); }
+  .f50-notice summary { cursor: pointer; font-size: 13px; font-weight: 500; }
+  #f50-notice-body { margin-top: 0.75rem; font-size: 13px; color: var(--text-muted); line-height: 1.55; }
+  #f50-notice-body .f50-h { font-weight: 600; color: var(--text); margin: 0.9rem 0 0.3rem; font-size: 12px; letter-spacing: 0.04em; }
+  #f50-notice-body .f50-p { margin-bottom: 0.5rem; }
+  #f50-notice-body .f50-b { padding-left: 1rem; text-indent: -0.8rem; margin-bottom: 0.3rem; }
+  .f50-opt { align-items: flex-start; margin-bottom: 0.6rem; }
+  .f50-opt input { margin-top: 3px; }
+
   @media (max-width: 480px) {
     .field-row { grid-template-columns: 1fr; }
     .checkbox-grid { grid-template-columns: 1fr; }
@@ -823,6 +833,47 @@
         <input type="text" id="ei-prev-supervisor">
       </div>
     </div>
+  </div>
+  <div class="section-card" id="f50-card">
+    <div class="section-title">Choice of Doctor (NWCC Form 50)</div>
+    <details class="f50-notice">
+      <summary>Read the Notice of Your Right to Choose a Doctor</summary>
+      <div id="f50-notice-body"></div>
+    </details>
+
+    <div class="field">
+      <label>Choose one: <span class="req">*</span></label>
+      <label class="checkbox-item f50-opt"><input type="radio" name="f50-choice" value="doctor"> <span>I choose the following doctor to treat me for this work-related injury. I certify that this doctor has treated me or an immediate family member before the work-related injury.</span></label>
+      <label class="checkbox-item f50-opt" style="margin-bottom:0;"><input type="radio" name="f50-choice" value="none"> <span>I do not choose a doctor (select a reason below)</span></label>
+    </div>
+
+    <div id="f50-doctor-wrap" style="display:none;">
+      <div class="field-row" style="margin-bottom:0;">
+        <div class="field" style="margin-bottom:0;">
+          <label for="f50-doctor-name">Doctor's name <span class="req">*</span></label>
+          <input type="text" id="f50-doctor-name">
+        </div>
+        <div class="field" style="margin-bottom:0;">
+          <label for="f50-doctor-address">Doctor's address, if known</label>
+          <input type="text" id="f50-doctor-address" placeholder="Street, city, state">
+        </div>
+      </div>
+    </div>
+
+    <div id="f50-none-wrap" style="display:none;">
+      <label class="checkbox-item f50-opt"><input type="checkbox" name="f50-reason" value="No prior doctor"> <span>I do not have a doctor who has treated me or an immediate family member before this injury.</span></label>
+      <label class="checkbox-item f50-opt" style="margin-bottom:0;"><input type="checkbox" name="f50-reason" value="Notified; do not wish to choose"> <span>I have received notice of my right to choose a doctor, but I do not wish to choose a doctor who has treated me or an immediate family member.</span></label>
+    </div>
+
+    <div style="margin-top:1.25rem;padding-top:1rem;border-top:1px solid var(--border);">
+      <label class="checkbox-item f50-opt" style="margin-bottom:0;"><input type="checkbox" id="f50-notified"> <span>My employer has informed me of the right to choose a doctor.</span></label>
+      <div class="field" id="f50-notice-date-wrap" style="display:none;margin:0.75rem 0 0;max-width:220px;">
+        <label for="f50-notice-date">Date of notice <span class="req">*</span></label>
+        <input type="date" id="f50-notice-date">
+      </div>
+    </div>
+
+    <div class="optional-note">Your signature and date at the bottom of this form are used as your signature on the Form 50 pages.</div>
   </div>
 </div>
 
@@ -1600,14 +1651,151 @@ const SPANISH_LABELS = {
   "Sign here": "Firme aquí",
   "Clear": "Borrar",
   "Please sign the form.": "Firme el formulario.",
-  "Please enter the signature date.": "Ingrese la fecha de la firma."
+  "Please enter the signature date.": "Ingrese la fecha de la firma.",
+  // ── Form 50 (Choice of Doctor) on-screen labels ──
+  "Choice of Doctor (NWCC Form 50)": "Elección de médico (Formulario 50 del NWCC)",
+  "Read the Notice of Your Right to Choose a Doctor": "Lea la notificación de su derecho a elegir un médico",
+  "Choose one:": "Elija una opción:",
+  "I choose the following doctor to treat me for this work-related injury. I certify that this doctor has treated me or an immediate family member before the work-related injury.": "Yo elijo que el siguiente médico me trate por esta lesión laboral. Doy fe de que este médico ha tratado o bien a mí o a un familiar cercano antes de esta lesión laboral.",
+  "I do not choose a doctor (select a reason below)": "No elijo un médico (seleccione una razón a continuación)",
+  "Doctor's address, if known": "Dirección del médico, si se sabe",
+  "Street, city, state": "Calle, ciudad, estado",
+  "I do not have a doctor who has treated me or an immediate family member before this injury.": "No hay médico que ha tratado o a mí o a un familiar cercano antes de esta lesión.",
+  "I have received notice of my right to choose a doctor, but I do not wish to choose a doctor who has treated me or an immediate family member.": "He recibido notificación de mi derecho a elegir un médico pero no deseo elegir un médico que ha tratado o a mí o a un familiar cercano.",
+  "My employer has informed me of the right to choose a doctor.": "Mi empleador me ha notificado del derecho a elegir un médico.",
+  "Date of notice": "Fecha de notificación",
+  "Your signature and date at the bottom of this form are used as your signature on the Form 50 pages.": "Su firma y fecha al final de este formulario se usan como su firma en las páginas del Formulario 50.",
+  "Please choose a doctor, or select that you do not choose one (Form 50).": "Elija un médico o indique que no elige uno (Formulario 50).",
+  "Please select a reason for not choosing a doctor (Form 50).": "Seleccione una razón por no elegir un médico (Formulario 50).",
+  "Please enter the date you were notified (Form 50).": "Ingrese la fecha en que fue notificado (Formulario 50)."
 };
+// ── NWCC Form 50: Notice of Employee's Right to Choose a Doctor (EN + ES) ──
+// One source of truth for the on-screen notice and the PDF pages. Straight apostrophes
+// only, because jsPDF's built-in fonts don't render curly quotes reliably.
+const F50_TEXT = {
+  en: {
+    noticeTitle: "NOTICE OF EMPLOYEE'S RIGHT TO CHOOSE A DOCTOR",
+    formName: "NWCC Form 50 - Revised 03/2018",
+    dateOfInjury: "DATE OF INJURY",
+    employeeName: "EMPLOYEE NAME",
+    designationTitle: "CHOICE OF DOCTOR DESIGNATION FORM",
+    chooseIntro: "I choose the following doctor to treat me for the work-related injury I had on {date}. I certify that this doctor has treated me or an immediate family member before the work-related injury.",
+    doctorName: "DOCTOR NAME",
+    doctorAddress: "DOCTOR ADDRESS, IF KNOWN",
+    employeeSignature: "EMPLOYEE SIGNATURE",
+    date: "DATE",
+    orHeading: "OR (Indicate your reason(s) for not choosing a doctor)",
+    reason1: "I do not have a doctor who has treated me or an immediate family member before this injury.",
+    reason2: "I have received notice of my right to choose a doctor, but I do not wish to choose a doctor who has treated me or an immediate family member.",
+    noticeToEmployer: "NOTICE TO EMPLOYER: Give this form to the injured worker as soon as possible AFTER each injury.",
+    notice: [
+      { t: 'h', x: "EMPLOYEE MAY CHOOSE" },
+      { t: 'p', x: "When you are injured at work, you may have the right to choose a doctor to treat you." },
+      { t: 'p', x: "If your employer gives you notice of this right following the accident, your choice of doctor is limited to a doctor who has treated you or an immediate family member before the injury." },
+      { t: 'b', x: "You must choose as soon as possible after your employer gives you this notice." },
+      { t: 'b', x: "If you have such a doctor and want that doctor to treat you for your work injury, you must tell your employer the name of the doctor." },
+      { t: 'b', x: "You can use the Choice of Doctor Designation Form below to record the name of the doctor you choose." },
+      { t: 'b', x: "Immediate family members are your spouse, children, parents, stepchildren, and stepparents." },
+      { t: 'b', x: "If your employer asks, you or your family member must give your employer written permission to verify prior treatment." },
+      { t: 'p', x: "If it is an emergency, get the treatment you need, then tell your employer the name of your doctor." },
+      { t: 'p', x: "You may choose any doctor to perform major surgery or an amputation, if that treatment is recommended." },
+      { t: 'p', x: "Once you choose your doctor, you may not change doctors unless your employer agrees or the Nebraska Workers' Compensation Court orders a change. A referral made by the chosen doctor is not a change." },
+      { t: 'p', x: "If your claim is denied, you may choose any doctor. You will be responsible for the medical bills unless your employer is later found liable for the claim." },
+      { t: 'p', x: "If you choose a doctor outside the community where you live or work, and a doctor is available in a closer community, you will not receive mileage reimbursement." },
+      { t: 'h', x: "EMPLOYER MAY CHOOSE" },
+      { t: 'p', x: "If you were notified, but do not choose a doctor who treated you or a family member before the accident, YOUR EMPLOYER HAS THE RIGHT TO CHOOSE YOUR DOCTOR." },
+      { t: 'p', x: "If you were notified, but you or your family member do not give permission for your employer to verify prior treatment with the doctor you choose, YOUR EMPLOYER HAS THE RIGHT TO CHOOSE YOUR DOCTOR." }
+    ],
+    employeeConfirmHeading: "EMPLOYEE CONFIRMATION OF NOTICE",
+    employeeConfirmText: "My employer has informed me of the right to choose a doctor.",
+    dateOfNotice: "DATE OF NOTICE",
+    employerConfirmHeading: "EMPLOYER CONFIRMATION OF NOTICE",
+    employerConfirmText: "I have informed my employee of the right to choose a doctor.",
+    repName: "EMPLOYER REPRESENTATIVE NAME",
+    repSignature: "EMPLOYER REPRESENTATIVE SIGNATURE",
+    footer: "NWCC Form 50 - Revised 03/2018"
+  },
+  es: {
+    noticeTitle: "NOTIFICACIÓN DEL DERECHO DEL EMPLEADO A ELEGIR UN MÉDICO",
+    formName: "NWCC Form 50 (Spanish) - Revised 03/2018",
+    dateOfInjury: "FECHA DE LESIÓN",
+    employeeName: "NOMBRE DEL EMPLEADO",
+    designationTitle: "FORMULARIO DE NOMBRAMIENTO DE MÉDICO ELEGIDO",
+    chooseIntro: "Yo elijo que el siguiente médico me trate por la lesión laboral que sufrí el {date}. Doy fe de que este médico ha tratado o bien a mí o a un familiar cercano antes de esta lesión laboral.",
+    doctorName: "NOMBRE DEL MÉDICO",
+    doctorAddress: "DIRECCIÓN DEL MÉDICO, SI SE SABE",
+    employeeSignature: "FIRMA DEL EMPLEADO",
+    date: "FECHA",
+    orHeading: "O (Marque la(s) razón(es) por no elegir un médico)",
+    reason1: "No hay médico que ha tratado o a mí o a un familiar cercano antes de esta lesión.",
+    reason2: "He recibido notificación de mi derecho a elegir un médico pero no deseo elegir un médico que ha tratado o a mí o a un familiar cercano.",
+    noticeToEmployer: "NOTIFICACIÓN AL EMPLEADOR: Entréguele este formulario al trabajador lesionado tan pronto como sea posible DESPUÉS de cada lesión.",
+    notice: [
+      { t: 'h', x: "EL EMPLEADO PUEDE ELEGIR" },
+      { t: 'p', x: "Cuando Ud. sufra una lesión laboral, puede que tenga el derecho a elegir el médico que lo trate." },
+      { t: 'p', x: "Si su empleador le notifica de este derecho después del accidente, la elección que tiene Ud. está limitada a un médico que ha tratado o bien a Ud. o a un familiar cercano antes de la lesión." },
+      { t: 'b', x: "Ud. debe de hacer su elección tan pronto como sea posible después de que su empleador le dé esta notificación." },
+      { t: 'b', x: "Si Ud. tiene tal médico y quiere que ese médico le trate su lesión laboral, debe de decirle al empleador el nombre del médico." },
+      { t: 'b', x: "Ud. puede utilizar el Formulario de Nombramiento de Médico Elegido a continuación para registrar el médico que Ud. elige." },
+      { t: 'b', x: "Los familiares cercanos incluyen su esposo/a, hijos, padres, hijastros y padrastros." },
+      { t: 'b', x: "Si su empleador se lo pide, Ud. o su familiar debe de entregarle permiso escrito para verificar tratamiento previo." },
+      { t: 'p', x: "Si es una emergencia, reciba el tratamiento que necesite, y luego dígale a su empleador el nombre de su médico." },
+      { t: 'p', x: "Ud. puede elegir cualquier médico para operarle en una cirugía mayor o amputación si ese tratamiento está recomendado." },
+      { t: 'p', x: "Una vez elegido el médico, no se le permite cambiar de médicos a no ser que su empleador esté de acuerdo o si el Tribunal de Compensación de Trabajadores ordene tal cambio. No constituye un cambio de médicos si el médico elegido le deriva a Ud. a otro médico." },
+      { t: 'p', x: "Si se le niega el reclamo, Ud. puede elegir cualquier médico. Ud. será responsable por los gastos médicos a no ser que se le responsabilice a su empleador por el reclamo en un momento futuro." },
+      { t: 'p', x: "Si Ud. elige un médico fuera de la comunidad en la que vive o trabaja y se encuentra disponible un médico en una comunidad más cercana, Ud. no recibirá reembolso por millaje." },
+      { t: 'h', x: "EL EMPLEADOR PUEDE ELEGIR" },
+      { t: 'p', x: "Si Ud. fue notificado pero no elige un médico que ha tratado a Ud. o a un familiar antes del accidente, entonces SU EMPLEADOR TIENE EL DERECHO A ELEGIR EL MÉDICO." },
+      { t: 'p', x: "Si Ud. fue notificado pero Ud. o su familiar no le da permiso al empleador para que verifiquen tratamiento previo con el médico que Ud. elige, entonces SU EMPLEADOR TIENE EL DERECHO A ELEGIR EL MÉDICO." }
+    ],
+    employeeConfirmHeading: "CONFIRMACIÓN DE NOTIFICACIÓN AL EMPLEADO",
+    employeeConfirmText: "Mi empleador me ha notificado del derecho a elegir un médico.",
+    dateOfNotice: "FECHA DE NOTIFICACIÓN",
+    employerConfirmHeading: "CONFIRMACIÓN DE NOTIFICACIÓN AL EMPLEADOR",
+    employerConfirmText: "Yo le he informado a mi empleado de su derecho a elegir un médico.",
+    repName: "NOMBRE DEL REPRESENTANTE DEL EMPLEADOR",
+    repSignature: "FIRMA DEL REPRESENTANTE DEL EMPLEADOR",
+    footer: "NWCC Form 50 (Spanish) - Revised 03/2018"
+  }
+};
+
+function renderForm50Notice() {
+  const box = document.getElementById('f50-notice-body');
+  if (!box) return;
+  const L = F50_TEXT[uiLanguage] || F50_TEXT.en;
+  box.textContent = '';
+  L.notice.forEach(b => {
+    const el = document.createElement('div');
+    el.className = 'f50-' + b.t;
+    el.textContent = (b.t === 'b' ? '\u2022 ' : '') + b.x;
+    box.appendChild(el);
+  });
+}
+
+function updateForm50Visibility() {
+  const choice = document.querySelector('input[name="f50-choice"]:checked');
+  const v = choice ? choice.value : '';
+  document.getElementById('f50-doctor-wrap').style.display = v === 'doctor' ? 'block' : 'none';
+  document.getElementById('f50-none-wrap').style.display = v === 'none' ? 'block' : 'none';
+  document.getElementById('f50-notice-date-wrap').style.display =
+    document.getElementById('f50-notified').checked ? 'block' : 'none';
+}
+
+function resetForm50() {
+  document.querySelectorAll('input[name="f50-choice"]').forEach(r => r.checked = false);
+  document.querySelectorAll('input[name="f50-reason"]').forEach(c => c.checked = false);
+  ['f50-doctor-name', 'f50-doctor-address', 'f50-notice-date'].forEach(id => { document.getElementById(id).value = ''; });
+  document.getElementById('f50-notified').checked = false;
+  updateForm50Visibility();
+}
+
 let uiLanguage = 'en';
 const originalText = new WeakMap();
 const originalAttributes = new WeakMap();
 function t(en) { return uiLanguage === 'es' ? (SPANISH_LABELS[en] || en) : en; }
 function translateUI() {
   document.documentElement.lang = uiLanguage;
+  renderForm50Notice();
   const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
   let node;
   while ((node = walker.nextNode())) {
@@ -1737,6 +1925,10 @@ document.addEventListener('DOMContentLoaded', () => {
   document.title = CONFIG.appName;
 
   bindSignaturePad();
+
+  // Form 50 show/hide wiring
+  document.querySelectorAll('input[name="f50-choice"]').forEach(r => r.addEventListener('change', updateForm50Visibility));
+  document.getElementById('f50-notified').addEventListener('change', updateForm50Visibility);
 
   // Set today's date as default
   const today = new Date().toISOString().split('T')[0];
@@ -1892,6 +2084,7 @@ function openForm(formId) {
 
   showScreen('screen-form');
   resetSignatureBlock();   // must run after the screen is visible so the canvas has a width
+  resetForm50();
   translateUI();
 }
 
@@ -1980,6 +2173,12 @@ function validateFormFields() {
       if (!document.getElementById(f.id).value.trim()) return `${uiLanguage === 'es' ? 'Complete el campo: ' : 'Please fill in: '}${t(f.label)}`;
     }
     if (!document.querySelector('input[name="ei-type"]:checked')) return t('Please select report type (Injury, Illness, or Near miss).');
+    // Form 50 (Choice of Doctor)
+    const f50c = document.querySelector('input[name="f50-choice"]:checked');
+    if (!f50c) return t('Please choose a doctor, or select that you do not choose one (Form 50).');
+    if (f50c.value === 'doctor' && !getVal('f50-doctor-name')) return `${uiLanguage === 'es' ? 'Complete el campo: ' : 'Please fill in: '}${t("Doctor's name")}`;
+    if (f50c.value === 'none' && !document.querySelector('input[name="f50-reason"]:checked')) return t('Please select a reason for not choosing a doctor (Form 50).');
+    if (document.getElementById('f50-notified').checked && !getVal('f50-notice-date')) return t('Please enter the date you were notified (Form 50).');
     return null;
   }
 
@@ -2060,6 +2259,9 @@ function collectFormData() {
   }
 
   if (currentForm === 'employee-injury') {
+    const f50Pick = document.querySelector('input[name="f50-choice"]:checked');
+    const f50Chose = !!f50Pick && f50Pick.value === 'doctor';
+    const f50Notified = document.getElementById('f50-notified').checked;
     return {
       formType: "Employee's Report of Injury",
       reporter: getVal('ei-name'), empId: currentUser.empId,
@@ -2074,6 +2276,13 @@ function collectFormData() {
       doctorPhone: getVal('ei-doctor-phone'), doctorDate: getVal('ei-doctor-date'),
       doctorTime: getVal('ei-doctor-time'), prevInjury: getChecked('ei-prev-injury'),
       prevWhen: getVal('ei-prev-when'), prevSupervisor: getVal('ei-prev-supervisor'),
+      form50Choice: f50Chose ? 'Chose a doctor' : 'Did not choose a doctor',
+      form50DoctorName: f50Chose ? getVal('f50-doctor-name') : '',
+      form50DoctorAddress: f50Chose ? getVal('f50-doctor-address') : '',
+      form50NoChoiceReasons: f50Chose ? '' : Array.from(document.querySelectorAll('input[name="f50-reason"]:checked')).map(c => c.value).join(', '),
+      form50NoticeConfirmed: f50Notified ? 'Yes' : 'No',
+      form50DateOfNotice: f50Notified ? getVal('f50-notice-date') : '',
+      form50Language: uiLanguage === 'es' ? 'Spanish' : 'English',
       submittedAt,
     };
   }
@@ -2254,7 +2463,7 @@ function generatePDF(data, sig) {
   }
 
   // ── SIGNATURE ROW (signature image on the left, signed date beside it) ──
-  function sigRow(label1, label2) {
+  function sigRow(label1, label2, blank) {
     const h = 60;
     if (y + h > 750) { doc.addPage(); y = margin; drawPageBorder(); }
     const total = contentW + 20;
@@ -2265,14 +2474,102 @@ function generatePDF(data, sig) {
     doc.setTextColor(80, 80, 80); doc.setFontSize(7.5); doc.setFont('helvetica','bold');
     doc.text(label1, margin - 4, y + 9);
     doc.text(label2, margin - 4 + left, y + 9);
-    if (sig && sig.img) {
+    if (!blank && sig && sig.img) {
       const maxW = left - 16, maxH = 42;
       const scale = Math.min(maxW / sig.w, maxH / sig.h);
       doc.addImage(sig.img, 'PNG', margin - 4, y + 14, sig.w * scale, sig.h * scale);
     }
     doc.setTextColor(...black); doc.setFontSize(10); doc.setFont('helvetica','normal');
-    doc.text(data.signatureDate || '', margin - 4 + left, y + 34);
+    doc.text(blank ? '' : (data.signatureDate || ''), margin - 4 + left, y + 34);
     y += h;
+  }
+
+  // ── Wrapped paragraph that flows across pages (used by the Form 50 pages) ──
+  function f50Para(text, size, bold, indent) {
+    indent = indent || 0;
+    doc.setFont('helvetica', bold ? 'bold' : 'normal');
+    doc.setFontSize(size);
+    doc.setTextColor(...black);
+    const lh = size * 1.28;
+    doc.splitTextToSize(text, contentW - indent).forEach(line => {
+      if (y + lh > 745) { doc.addPage(); y = margin; drawPageBorder(); doc.setFont('helvetica', bold ? 'bold' : 'normal'); doc.setFontSize(size); doc.setTextColor(...black); }
+      doc.text(line, margin - 4 + indent, y + size);
+      y += lh;
+    });
+    y += 4;
+  }
+
+  // ── Checkbox line (box drawn, X inside when selected) ──
+  function f50Check(checked, text) {
+    const size = 9.5, lh = size * 1.28;
+    const lines = doc.splitTextToSize(text, contentW - 24);
+    const need = lines.length * lh + 6;
+    if (y + need > 745) { doc.addPage(); y = margin; drawPageBorder(); }
+    doc.setDrawColor(...black); doc.setLineWidth(0.8);
+    doc.rect(margin - 4, y + 1, 9, 9, 'S');
+    doc.setTextColor(...black);
+    if (checked) { doc.setFont('helvetica', 'bold'); doc.setFontSize(10); doc.text('X', margin - 2.5, y + 9); }
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(size);
+    doc.text(lines, margin + 12, y + size);
+    doc.setLineWidth(0.5);
+    y += need;
+  }
+
+  // ── NWCC Form 50: appended after the Employee Report of Injury, in the language the employee used ──
+  function form50Pages() {
+    const L = F50_TEXT[data.form50Language === 'Spanish' ? 'es' : 'en'];
+    const chose = data.form50Choice === 'Chose a doctor';
+    const reasons = data.form50NoChoiceReasons || '';
+    const confirmed = data.form50NoticeConfirmed === 'Yes';
+
+    doc.addPage(); y = margin; drawPageBorder();
+
+    // Title band
+    doc.setFillColor(...lightGray);
+    doc.rect(margin - 10, margin - 10, contentW + 20, 50, 'F');
+    doc.setDrawColor(...borderGray); doc.setLineWidth(0.5);
+    doc.rect(margin - 10, margin - 10, contentW + 20, 50, 'S');
+    doc.setTextColor(...black); doc.setFont('helvetica', 'bold'); doc.setFontSize(12);
+    doc.text(L.noticeTitle, pageW / 2, y + 12, { align: 'center' });
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(9);
+    doc.text(CONFIG.orgName + '  |  ' + L.formName, pageW / 2, y + 28, { align: 'center' });
+    y += 56;
+
+    row2(L.dateOfInjury, data.date, L.employeeName, data.name);
+
+    // Choice of Doctor Designation Form
+    sectionHeader(L.designationTitle);
+    f50Para(L.chooseIntro.replace('{date}', data.date || '____________'), 9.5, false);
+    row2(L.doctorName, chose ? data.form50DoctorName : '', L.doctorAddress, chose ? data.form50DoctorAddress : '');
+    sigRow(L.employeeSignature, L.date, !chose);
+    f50Para(L.orHeading, 9, true);
+    f50Check(!chose && reasons.indexOf('No prior doctor') !== -1, L.reason1);
+    f50Check(!chose && reasons.indexOf('Notified; do not wish to choose') !== -1, L.reason2);
+    sigRow(L.employeeSignature, L.date, chose);
+    f50Para(L.noticeToEmployer, 8, true);
+    y += 4;
+
+    // Notice text
+    sectionHeader(L.noticeTitle);
+    L.notice.forEach(b => {
+      if (b.t === 'h') { y += 2; f50Para(b.x, 9, true); }
+      else if (b.t === 'b') f50Para('\u2022 ' + b.x, 8.5, false, 10);
+      else f50Para(b.x, 8.5, false);
+    });
+    y += 4;
+
+    // Confirmations
+    sectionHeader(L.employeeConfirmHeading);
+    f50Check(confirmed, L.employeeConfirmText);
+    row2(L.employeeName, data.name, L.dateOfNotice, data.form50DateOfNotice);
+    sigRow(L.employeeSignature, L.date, !confirmed);
+
+    sectionHeader(L.employerConfirmHeading);
+    f50Para(L.employerConfirmText, 9.5, false);
+    row2(L.repName, '', L.dateOfNotice, '');
+    sigRow(L.repSignature, L.date, true);
+
+    f50Para(L.footer, 8, false);
   }
 
   // ══════════════════════════════
@@ -2319,6 +2616,7 @@ function generatePDF(data, sig) {
     row2('Has this part of your body been injured before?', data.prevInjury, 'If yes, when?', data.prevWhen);
     row('Supervisor at that time', data.prevSupervisor, 24);
     sigRow('Your Signature', 'Date');
+    form50Pages();
 
   // ══════════════════════════════
   //  SUPERVISOR ACCIDENT INVESTIGATION
