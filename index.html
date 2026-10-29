@@ -682,6 +682,10 @@
   <div class="sig-wrap">
     <div class="section-card">
       <div class="section-title">Signature</div>
+      <div class="field">
+        <label for="sig-name">Printed name <span class="req">*</span></label>
+        <input type="text" id="sig-name" autocomplete="off">
+      </div>
       <div class="sig-row">
         <div>
           <label id="sig-label">Signature <span class="req">*</span></label>
@@ -866,11 +870,12 @@
     </div>
 
     <div style="margin-top:1.25rem;padding-top:1rem;border-top:1px solid var(--border);">
-      <label class="checkbox-item f50-opt" style="margin-bottom:0;"><input type="checkbox" id="f50-notified"> <span>My employer has informed me of the right to choose a doctor.</span></label>
+      <label class="checkbox-item f50-opt" style="margin-bottom:0;"><input type="checkbox" id="f50-notified"> <span>My employer has informed me of the right to choose a doctor. <span class="req">*</span></span></label>
       <div class="field" id="f50-notice-date-wrap" style="display:none;margin:0.75rem 0 0;max-width:220px;">
         <label for="f50-notice-date">Date of notice <span class="req">*</span></label>
         <input type="date" id="f50-notice-date">
       </div>
+      <div class="optional-note" id="f50-confirm-note" style="display:none;margin-top:0.9rem;">Your printed name and signature at the bottom of this form will appear on this confirmation.</div>
     </div>
 
     <div class="optional-note">Your signature and date at the bottom of this form are used as your signature on the Form 50 pages.</div>
@@ -1667,7 +1672,11 @@ const SPANISH_LABELS = {
   "Your signature and date at the bottom of this form are used as your signature on the Form 50 pages.": "Su firma y fecha al final de este formulario se usan como su firma en las páginas del Formulario 50.",
   "Please choose a doctor, or select that you do not choose one (Form 50).": "Elija un médico o indique que no elige uno (Formulario 50).",
   "Please select a reason for not choosing a doctor (Form 50).": "Seleccione una razón por no elegir un médico (Formulario 50).",
-  "Please enter the date you were notified (Form 50).": "Ingrese la fecha en que fue notificado (Formulario 50)."
+  "Please enter the date you were notified (Form 50).": "Ingrese la fecha en que fue notificado (Formulario 50).",
+  "Printed name": "Nombre en letra de molde",
+  "Please enter your printed name.": "Ingrese su nombre en letra de molde.",
+  "Please confirm that your employer informed you of your right to choose a doctor (Form 50).": "Confirme que su empleador le notificó su derecho a elegir un médico (Formulario 50).",
+  "Your printed name and signature at the bottom of this form will appear on this confirmation.": "Su nombre en letra de molde y su firma al final de este formulario aparecerán en esta confirmación."
 };
 // ── NWCC Form 50: Notice of Employee's Right to Choose a Doctor (EN + ES) ──
 // One source of truth for the on-screen notice and the PDF pages. Straight apostrophes
@@ -1683,6 +1692,7 @@ const F50_TEXT = {
     doctorName: "DOCTOR NAME",
     doctorAddress: "DOCTOR ADDRESS, IF KNOWN",
     employeeSignature: "EMPLOYEE SIGNATURE",
+    printedName: "PRINTED NAME",
     date: "DATE",
     orHeading: "OR (Indicate your reason(s) for not choosing a doctor)",
     reason1: "I do not have a doctor who has treated me or an immediate family member before this injury.",
@@ -1725,6 +1735,7 @@ const F50_TEXT = {
     doctorName: "NOMBRE DEL MÉDICO",
     doctorAddress: "DIRECCIÓN DEL MÉDICO, SI SE SABE",
     employeeSignature: "FIRMA DEL EMPLEADO",
+    printedName: "NOMBRE EN LETRA DE MOLDE",
     date: "FECHA",
     orHeading: "O (Marque la(s) razón(es) por no elegir un médico)",
     reason1: "No hay médico que ha tratado o a mí o a un familiar cercano antes de esta lesión.",
@@ -1777,8 +1788,9 @@ function updateForm50Visibility() {
   const v = choice ? choice.value : '';
   document.getElementById('f50-doctor-wrap').style.display = v === 'doctor' ? 'block' : 'none';
   document.getElementById('f50-none-wrap').style.display = v === 'none' ? 'block' : 'none';
-  document.getElementById('f50-notice-date-wrap').style.display =
-    document.getElementById('f50-notified').checked ? 'block' : 'none';
+  const notified = document.getElementById('f50-notified').checked;
+  document.getElementById('f50-notice-date-wrap').style.display = notified ? 'block' : 'none';
+  document.getElementById('f50-confirm-note').style.display = notified ? 'block' : 'none';
 }
 
 function resetForm50() {
@@ -1866,6 +1878,7 @@ function clearSignature() { initSignaturePad(); }
 function resetSignatureBlock() {
   initSignaturePad();
   document.getElementById('sig-date').value = todayISO();
+  document.getElementById('sig-name').value = currentUser.name || '';
 }
 
 function sigPoint(e) {
@@ -2120,6 +2133,7 @@ function resetForm() {
   document.getElementById('factor-other-wrap').style.display = 'none';
   document.getElementById('form-error').style.display = 'none';
   document.getElementById('sig-date').value = todayISO();
+  document.getElementById('sig-name').value = '';
   sigPad.hasInk = false;
   document.getElementById('sig-box').classList.remove('signed');
 }
@@ -2131,6 +2145,7 @@ function resetForm() {
 function validateForm() {
   const fieldError = validateFormFields();
   if (fieldError) return fieldError;
+  if (!getVal('sig-name')) return t('Please enter your printed name.');
   if (!sigPad.hasInk) return t('Please sign the form.');
   if (!getVal('sig-date')) return t('Please enter the signature date.');
   return null;
@@ -2178,7 +2193,8 @@ function validateFormFields() {
     if (!f50c) return t('Please choose a doctor, or select that you do not choose one (Form 50).');
     if (f50c.value === 'doctor' && !getVal('f50-doctor-name')) return `${uiLanguage === 'es' ? 'Complete el campo: ' : 'Please fill in: '}${t("Doctor's name")}`;
     if (f50c.value === 'none' && !document.querySelector('input[name="f50-reason"]:checked')) return t('Please select a reason for not choosing a doctor (Form 50).');
-    if (document.getElementById('f50-notified').checked && !getVal('f50-notice-date')) return t('Please enter the date you were notified (Form 50).');
+    if (!document.getElementById('f50-notified').checked) return t('Please confirm that your employer informed you of your right to choose a doctor (Form 50).');
+    if (!getVal('f50-notice-date')) return t('Please enter the date you were notified (Form 50).');
     return null;
   }
 
@@ -2484,6 +2500,13 @@ function generatePDF(data, sig) {
     y += h;
   }
 
+  // ── Printed name row followed by the signature/date row (kept together on one page) ──
+  function signBlock(printedLabel, sigLabel, dateLabel, blank) {
+    if (y + 24 + 60 > 750) { doc.addPage(); y = margin; drawPageBorder(); }
+    row(printedLabel, blank ? '' : (data.signaturePrintedName || ''), 24);
+    sigRow(sigLabel, dateLabel, blank);
+  }
+
   // ── Wrapped paragraph that flows across pages (used by the Form 50 pages) ──
   function f50Para(text, size, bold, indent) {
     indent = indent || 0;
@@ -2541,11 +2564,11 @@ function generatePDF(data, sig) {
     sectionHeader(L.designationTitle);
     f50Para(L.chooseIntro.replace('{date}', data.date || '____________'), 9.5, false);
     row2(L.doctorName, chose ? data.form50DoctorName : '', L.doctorAddress, chose ? data.form50DoctorAddress : '');
-    sigRow(L.employeeSignature, L.date, !chose);
+    signBlock(L.printedName, L.employeeSignature, L.date, !chose);
     f50Para(L.orHeading, 9, true);
     f50Check(!chose && reasons.indexOf('No prior doctor') !== -1, L.reason1);
     f50Check(!chose && reasons.indexOf('Notified; do not wish to choose') !== -1, L.reason2);
-    sigRow(L.employeeSignature, L.date, chose);
+    signBlock(L.printedName, L.employeeSignature, L.date, chose);
     f50Para(L.noticeToEmployer, 8, true);
     y += 4;
 
@@ -2562,7 +2585,7 @@ function generatePDF(data, sig) {
     sectionHeader(L.employeeConfirmHeading);
     f50Check(confirmed, L.employeeConfirmText);
     row2(L.employeeName, data.name, L.dateOfNotice, data.form50DateOfNotice);
-    sigRow(L.employeeSignature, L.date, !confirmed);
+    signBlock(L.printedName, L.employeeSignature, L.date, !confirmed);
 
     sectionHeader(L.employerConfirmHeading);
     f50Para(L.employerConfirmText, 9.5, false);
@@ -2595,7 +2618,7 @@ function generatePDF(data, sig) {
     row('Contributing factors', data.contributingFactors, 24);
     sectionHeader('Preventive Measures');
     row('What preventive measures can be implemented to avoid similar near misses in the future?', data.preventiveMeasures, 48);
-    sigRow('Signature', 'Date');
+    signBlock('Printed Name', 'Signature', 'Date');
 
   // ══════════════════════════════
   //  EMPLOYEE REPORT OF INJURY
@@ -2615,7 +2638,7 @@ function generatePDF(data, sig) {
     row2("Doctor's phone number", data.doctorPhone, 'Date seen', data.doctorDate);
     row2('Has this part of your body been injured before?', data.prevInjury, 'If yes, when?', data.prevWhen);
     row('Supervisor at that time', data.prevSupervisor, 24);
-    sigRow('Your Signature', 'Date');
+    signBlock('Printed Name', 'Your Signature', 'Date');
     form50Pages();
 
   // ══════════════════════════════
@@ -2635,7 +2658,7 @@ function generatePDF(data, sig) {
     row('Were safety regulations in place and used? If not, what was wrong?', data.safetyRegs, 32);
     row2("Doctor's Name", data.doctor, 'Hospital Name', data.hospital);
     row('Recommended preventive action to take in the future to prevent reoccurrence', data.prevention, 48);
-    sigRow('Supervisor Signature', 'Date');
+    signBlock('Printed Name', 'Supervisor Signature', 'Date');
 
   // ══════════════════════════════
   //  INCIDENT INVESTIGATION REPORT
@@ -2669,7 +2692,7 @@ function generatePDF(data, sig) {
     row3('Written by', data.writtenBy, 'Department', data.deptWritten, 'Title', data.titleWritten);
     row2('Date', data.dateWritten, 'Names of investigation team members', data.teamMembers);
     row3('Reviewed by', data.reviewedBy, 'Title', data.reviewerTitle, 'Date', '');
-    sigRow('Signature', 'Date');
+    signBlock('Printed Name', 'Signature', 'Date');
   }
 
   return doc;
@@ -2774,6 +2797,7 @@ async function submitForm() {
   // because a drawn signature is far too large for a spreadsheet cell.
   data.signature = 'Signed (image in PDF)';
   data.signatureDate = getVal('sig-date');
+  data.signaturePrintedName = getVal('sig-name');
 
   try {
     // Generate PDF
