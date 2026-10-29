@@ -430,6 +430,7 @@
   #f50-notice-body .f50-h { font-weight: 600; color: var(--text); margin: 0.9rem 0 0.3rem; font-size: 12px; letter-spacing: 0.04em; }
   #f50-notice-body .f50-p { margin-bottom: 0.5rem; }
   #f50-notice-body .f50-b { padding-left: 1rem; text-indent: -0.8rem; margin-bottom: 0.3rem; }
+  .ro-desc { font-size: 13px; color: var(--text-muted); margin-bottom: 0.75rem; }
   .f50-sub { font-size: 13px; font-weight: 600; margin-bottom: 0.4rem; }
   .f50-opt { align-items: flex-start; margin-bottom: 0.6rem; }
   .f50-opt input { margin-top: 3px; }
@@ -908,6 +909,13 @@
 
     <div class="optional-note">Your signature and date at the bottom of this form are used as your signature on the Form 50 pages.</div>
   </div>
+  <div class="section-card" id="ro-card">
+    <div class="section-title">Rights &amp; Obligations</div>
+    <p class="ro-desc">Nebraska Workers' Compensation Court Information Sheet: Rights &amp; Obligations under the Nebraska Workers' Compensation Law</p>
+    <a class="btn btn-secondary" id="ro-link" href="Rights-and-Obligations.pdf" target="_blank" rel="noopener" onclick="markRightsOpened()">Open the information sheet (PDF)</a>
+    <label class="checkbox-item f50-opt" style="margin:1rem 0 0;"><input type="checkbox" id="ro-ack" disabled> <span>I have read the Rights &amp; Obligations information sheet. <span class="req">*</span></span></label>
+    <div class="optional-note" id="ro-hint" style="margin-top:0.9rem;">Open the information sheet to turn on this check box.</div>
+  </div>
 </div>
 
 <!-- ══════════════════════════════════════
@@ -1356,6 +1364,10 @@ const CONFIG = {
   // Google Apps Script Web App URL
   appsScriptUrl: 'https://script.google.com/macros/s/AKfycbz0TMRzD2cqgFEt7nhMZJF5BbAelCioYqGcnuh2I4bNP5BPKjg6ZcH2ezqfYqgWIqQ/exec',
 
+  // Rights & Obligations information sheet (PDF files live next to index.html in the GitHub repo).
+  // Leave 'es' empty to show the English sheet to Spanish users until a Spanish PDF is uploaded.
+  rightsPdf: { en: 'Rights-and-Obligations.pdf', es: '' },
+
   // Destination email per form type
   emails: {
     'near-miss': 'jaimeb@jsmmfarms.com',
@@ -1700,6 +1712,12 @@ const SPANISH_LABELS = {
   "Please select a reason for not choosing a doctor (Form 50).": "Seleccione una razón por no elegir un médico (Formulario 50).",
   "Please enter the date you were notified (Form 50).": "Ingrese la fecha en que fue notificado (Formulario 50).",
   "Printed name": "Nombre en letra de molde",
+  "Rights & Obligations": "Derechos y obligaciones",
+  "Nebraska Workers' Compensation Court Information Sheet: Rights & Obligations under the Nebraska Workers' Compensation Law": "Hoja de información del Tribunal de Compensación para Trabajadores de Nebraska: Derechos y obligaciones bajo la Ley de Compensación para Trabajadores de Nebraska",
+  "Open the information sheet (PDF)": "Abrir la hoja de información (PDF)",
+  "I have read the Rights & Obligations information sheet.": "He leído la hoja de información de derechos y obligaciones.",
+  "Open the information sheet to turn on this check box.": "Abra la hoja de información para activar esta casilla.",
+  "Please confirm that you have read the Rights & Obligations information sheet.": "Confirme que ha leído la hoja de información de derechos y obligaciones.",
   "An employer representative is signing here (optional)": "Un representante del empleador firma aquí (opcional)",
   "Employer Confirmation of Notice": "Confirmación de notificación al empleador",
   "I have informed my employee of the right to choose a doctor.": "Yo le he informado a mi empleado de su derecho a elegir un médico.",
@@ -1833,6 +1851,28 @@ function updateForm50Visibility() {
   }
 }
 
+function setupRightsLink() {
+  const link = document.getElementById('ro-link');
+  if (!link) return;
+  const files = CONFIG.rightsPdf || {};
+  link.href = files[uiLanguage] || files.en || 'Rights-and-Obligations.pdf';
+}
+
+// The check box stays off until the employee taps the link to open the sheet.
+// It turns on even if the file fails to load, so a missing PDF can never block an injury report.
+function markRightsOpened() {
+  document.getElementById('ro-ack').disabled = false;
+  document.getElementById('ro-hint').style.display = 'none';
+}
+
+function resetRights() {
+  const cb = document.getElementById('ro-ack');
+  cb.checked = false;
+  cb.disabled = true;
+  document.getElementById('ro-hint').style.display = 'block';
+  setupRightsLink();
+}
+
 function resetForm50() {
   document.querySelectorAll('input[name="f50-choice"]').forEach(r => r.checked = false);
   document.querySelectorAll('input[name="f50-reason"]').forEach(c => c.checked = false);
@@ -1852,6 +1892,7 @@ function t(en) { return uiLanguage === 'es' ? (SPANISH_LABELS[en] || en) : en; }
 function translateUI() {
   document.documentElement.lang = uiLanguage;
   renderForm50Notice();
+  setupRightsLink();
   const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
   let node;
   while ((node = walker.nextNode())) {
@@ -2162,6 +2203,7 @@ function openForm(formId) {
   showScreen('screen-form');
   resetSignatureBlock();   // must run after the screen is visible so the canvas has a width
   resetForm50();
+  resetRights();
   translateUI();
 }
 
@@ -2265,6 +2307,7 @@ function validateFormFields() {
       if (!repPad.hasInk) return t('Please have the employer representative sign.');
       if (!getVal('f50-rep-date')) return t("Please enter the representative's signature date.");
     }
+    if (!document.getElementById('ro-ack').checked) return t('Please confirm that you have read the Rights & Obligations information sheet.');
     return null;
   }
 
@@ -2372,6 +2415,8 @@ function collectFormData() {
       form50RepName: document.getElementById('f50-rep-toggle').checked ? getVal('f50-rep-name') : '',
       form50RepDate: document.getElementById('f50-rep-toggle').checked ? getVal('f50-rep-date') : '',
       form50Language: uiLanguage === 'es' ? 'Spanish' : 'English',
+      rightsObligationsRead: document.getElementById('ro-ack').checked ? 'Yes' : 'No',
+      rightsObligationsSheet: (uiLanguage === 'es' && CONFIG.rightsPdf && CONFIG.rightsPdf.es) ? 'Spanish' : 'English',
       submittedAt,
     };
   }
@@ -2713,6 +2758,7 @@ function generatePDF(data, sig, repSig) {
     row2("Doctor's phone number", data.doctorPhone, 'Date seen', data.doctorDate);
     row2('Has this part of your body been injured before?', data.prevInjury, 'If yes, when?', data.prevWhen);
     row('Supervisor at that time', data.prevSupervisor, 24);
+    row('Rights & Obligations acknowledgment', "I have read the Nebraska Workers' Compensation Court Information Sheet: Rights & Obligations under the Nebraska Workers' Compensation Law.", 32);
     signBlock('Printed Name', 'Your Signature', 'Date');
     form50Pages();
 
