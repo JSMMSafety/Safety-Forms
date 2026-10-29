@@ -399,7 +399,7 @@
     border-radius: var(--radius);
     background: #fff;
   }
-  #sig-canvas {
+  #sig-canvas, #rep-canvas {
     display: block;
     width: 100%;
     height: 140px;
@@ -430,6 +430,7 @@
   #f50-notice-body .f50-h { font-weight: 600; color: var(--text); margin: 0.9rem 0 0.3rem; font-size: 12px; letter-spacing: 0.04em; }
   #f50-notice-body .f50-p { margin-bottom: 0.5rem; }
   #f50-notice-body .f50-b { padding-left: 1rem; text-indent: -0.8rem; margin-bottom: 0.3rem; }
+  .f50-sub { font-size: 13px; font-weight: 600; margin-bottom: 0.4rem; }
   .f50-opt { align-items: flex-start; margin-bottom: 0.6rem; }
   .f50-opt input { margin-top: 3px; }
 
@@ -557,10 +558,9 @@
     <div class="section-card">
       <div class="section-title">Reporter</div>
       <div class="field" style="margin-bottom:0;">
-        <label for="f-reporter">Reported by (optional — leave blank to report anonymously)</label>
-        <input type="text" id="f-reporter" placeholder="Name will pre-fill from login if left blank">
+        <label for="f-reporter">Reported by <span class="req">*</span></label>
+        <input type="text" id="f-reporter" placeholder="Your name">
       </div>
-      <div class="optional-note">You may leave this blank to submit anonymously. Your employee ID will not appear on the report.</div>
     </div>
 
     <!-- Near Miss Details -->
@@ -876,6 +876,34 @@
         <input type="date" id="f50-notice-date">
       </div>
       <div class="optional-note" id="f50-confirm-note" style="display:none;margin-top:0.9rem;">Your printed name and signature at the bottom of this form will appear on this confirmation.</div>
+    </div>
+
+    <div style="margin-top:1.25rem;padding-top:1rem;border-top:1px solid var(--border);">
+      <label class="checkbox-item f50-opt" style="margin-bottom:0;"><input type="checkbox" id="f50-rep-toggle"> <span>An employer representative is signing here (optional)</span></label>
+      <div id="f50-rep-wrap" style="display:none;margin-top:1rem;">
+        <div class="f50-sub">Employer Confirmation of Notice</div>
+        <div class="optional-note" style="margin:0 0 1rem;padding-top:0;border-top:none;">I have informed my employee of the right to choose a doctor.</div>
+        <div class="field">
+          <label for="f50-rep-name">Representative printed name <span class="req">*</span></label>
+          <input type="text" id="f50-rep-name" autocomplete="off">
+        </div>
+        <div class="sig-row">
+          <div>
+            <label>Representative signature <span class="req">*</span></label>
+            <div class="sig-box" id="rep-box">
+              <canvas id="rep-canvas" aria-label="Representative signature"></canvas>
+              <div class="sig-hint">Sign here</div>
+            </div>
+            <div class="sig-actions">
+              <button type="button" class="btn btn-secondary" onclick="clearRepSignature()">Clear</button>
+            </div>
+          </div>
+          <div>
+            <label for="f50-rep-date">Date <span class="req">*</span></label>
+            <input type="date" id="f50-rep-date">
+          </div>
+        </div>
+      </div>
     </div>
 
     <div class="optional-note">Your signature and date at the bottom of this form are used as your signature on the Form 50 pages.</div>
@@ -1366,8 +1394,7 @@ const SPANISH_LABELS = {
   "Form": "Formulario",
   "Reporter (optional)": "Persona que reporta (opcional)",
   "Reporter": "Persona que reporta",
-  "Reported by (optional — leave blank to report anonymously)": "Reportado por (opcional; deje en blanco para reportar de manera anónima)",
-  "You may leave this blank to submit anonymously. Your employee ID will not appear on the report.": "Puede dejar este campo en blanco para reportar de manera anónima. Su número de empleado no aparecerá en el reporte.",
+  "Reported by": "Reportado por",
   "Near Miss Details": "Detalles del casi - accidente",
   "Date of near miss": "Fecha del casi-accidente",
   "Time of near miss": "Hora del casi-accidente",
@@ -1604,7 +1631,6 @@ const SPANISH_LABELS = {
   "First Last": "Nombre y apellido",
   "e.g. EMP-1234": "p. ej., EMP-1234",
   "Enter access password": "Ingrese la contraseña de acceso",
-  "Name will pre-fill from login if left blank": "El nombre se completará desde el inicio de sesión si se deja en blanco",
   "Building, area, or specific location": "Edificio, área o ubicación específica",
   "Provide a detailed description of what happened...": "Describa detalladamente lo que ocurrió...",
   "Name(s) and contact info of any witnesses": "Nombres e información de contacto de los testigos",
@@ -1674,6 +1700,14 @@ const SPANISH_LABELS = {
   "Please select a reason for not choosing a doctor (Form 50).": "Seleccione una razón por no elegir un médico (Formulario 50).",
   "Please enter the date you were notified (Form 50).": "Ingrese la fecha en que fue notificado (Formulario 50).",
   "Printed name": "Nombre en letra de molde",
+  "An employer representative is signing here (optional)": "Un representante del empleador firma aquí (opcional)",
+  "Employer Confirmation of Notice": "Confirmación de notificación al empleador",
+  "I have informed my employee of the right to choose a doctor.": "Yo le he informado a mi empleado de su derecho a elegir un médico.",
+  "Representative printed name": "Nombre en letra de molde del representante",
+  "Representative signature": "Firma del representante",
+  "Please enter the employer representative's printed name.": "Ingrese el nombre en letra de molde del representante del empleador.",
+  "Please have the employer representative sign.": "El representante del empleador debe firmar.",
+  "Please enter the representative's signature date.": "Ingrese la fecha de firma del representante.",
   "Please enter your printed name.": "Ingrese su nombre en letra de molde.",
   "Please confirm that your employer informed you of your right to choose a doctor (Form 50).": "Confirme que su empleador le notificó su derecho a elegir un médico (Formulario 50).",
   "Your printed name and signature at the bottom of this form will appear on this confirmation.": "Su nombre en letra de molde y su firma al final de este formulario aparecerán en esta confirmación."
@@ -1791,6 +1825,12 @@ function updateForm50Visibility() {
   const notified = document.getElementById('f50-notified').checked;
   document.getElementById('f50-notice-date-wrap').style.display = notified ? 'block' : 'none';
   document.getElementById('f50-confirm-note').style.display = notified ? 'block' : 'none';
+  const repOn = document.getElementById('f50-rep-toggle').checked;
+  document.getElementById('f50-rep-wrap').style.display = repOn ? 'block' : 'none';
+  if (repOn) {
+    if (!repPad.hasInk) repPad.init();
+    if (!document.getElementById('f50-rep-date').value) document.getElementById('f50-rep-date').value = todayISO();
+  }
 }
 
 function resetForm50() {
@@ -1798,6 +1838,10 @@ function resetForm50() {
   document.querySelectorAll('input[name="f50-reason"]').forEach(c => c.checked = false);
   ['f50-doctor-name', 'f50-doctor-address', 'f50-notice-date'].forEach(id => { document.getElementById(id).value = ''; });
   document.getElementById('f50-notified').checked = false;
+  document.getElementById('f50-rep-toggle').checked = false;
+  ['f50-rep-name', 'f50-rep-date'].forEach(id => { document.getElementById(id).value = ''; });
+  repPad.hasInk = false;
+  document.getElementById('rep-box').classList.remove('signed');
   updateForm50Visibility();
 }
 
@@ -1841,7 +1885,94 @@ let accessCode = ''; // Held in memory only until sign-out or refresh
 // ═══════════════════════════════════════
 //  SIGNATURE PAD
 // ═══════════════════════════════════════
-const sigPad = { ctx: null, drawing: false, hasInk: false, lastW: 0 };
+function createSigPad(canvasId, boxId) {
+  const pad = { ctx: null, drawing: false, hasInk: false, lastW: 0 };
+  const canvas = () => document.getElementById(canvasId);
+  const box = () => document.getElementById(boxId);
+
+  pad.init = function () {
+    const c = canvas();
+    const w = c.clientWidth, h = c.clientHeight;
+    if (!w || !h) return;               // hidden right now; sized when it is shown
+    const ratio = window.devicePixelRatio || 1;
+    c.width = Math.round(w * ratio);
+    c.height = Math.round(h * ratio);
+    const ctx = c.getContext('2d');
+    ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(0, 0, w, h);
+    ctx.lineWidth = 2.2;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.strokeStyle = '#1A1916';
+    pad.ctx = ctx;
+    pad.drawing = false;
+    pad.hasInk = false;
+    pad.lastW = w;
+    box().classList.remove('signed');
+  };
+
+  pad.reset = function () {
+    pad.hasInk = false;
+    pad.drawing = false;
+    box().classList.remove('signed');
+    pad.init();
+  };
+
+  const point = e => {
+    const rect = canvas().getBoundingClientRect();
+    return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+  };
+
+  pad.bind = function () {
+    const c = canvas();
+    c.addEventListener('pointerdown', e => {
+      if (!pad.ctx) pad.init();
+      if (!pad.ctx) return;
+      e.preventDefault();
+      c.setPointerCapture(e.pointerId);
+      pad.drawing = true;
+      const p = point(e);
+      pad.ctx.beginPath();
+      pad.ctx.moveTo(p.x, p.y);
+      // A tap leaves a dot.
+      pad.ctx.lineTo(p.x + 0.01, p.y + 0.01);
+      pad.ctx.stroke();
+      pad.hasInk = true;
+      box().classList.add('signed');
+    });
+    c.addEventListener('pointermove', e => {
+      if (!pad.drawing) return;
+      e.preventDefault();
+      const p = point(e);
+      pad.ctx.lineTo(p.x, p.y);
+      pad.ctx.stroke();
+    });
+    const stop = e => {
+      if (!pad.drawing) return;
+      pad.drawing = false;
+      try { c.releasePointerCapture(e.pointerId); } catch (_) {}
+    };
+    c.addEventListener('pointerup', stop);
+    c.addEventListener('pointercancel', stop);
+    c.addEventListener('pointerleave', stop);
+    // Rotating a phone resizes the pad. Only rebuild it if nothing has been signed yet.
+    window.addEventListener('resize', () => {
+      if (document.getElementById('screen-form').classList.contains('active') &&
+          !pad.hasInk && c.clientWidth && c.clientWidth !== pad.lastW) pad.init();
+    });
+  };
+
+  pad.capture = function () {
+    const c = canvas();
+    return { img: c.toDataURL('image/png'), w: c.width, h: c.height };
+  };
+
+  return pad;
+}
+
+const sigPad = createSigPad('sig-canvas', 'sig-box');   // employee signature (bottom of every form)
+const repPad = createSigPad('rep-canvas', 'rep-box');   // employer representative (Form 50 only)
 
 function todayISO() {
   // Local date (not UTC) so the default never lands on "tomorrow" in the evening.
@@ -1851,83 +1982,16 @@ function todayISO() {
   return d.getFullYear() + '-' + mm + '-' + dd;
 }
 
-function initSignaturePad() {
-  const c = document.getElementById('sig-canvas');
-  const w = c.clientWidth, h = c.clientHeight;
-  if (!w || !h) return;
-  const ratio = window.devicePixelRatio || 1;
-  c.width = Math.round(w * ratio);
-  c.height = Math.round(h * ratio);
-  const ctx = c.getContext('2d');
-  ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
-  ctx.fillStyle = '#fff';
-  ctx.fillRect(0, 0, w, h);
-  ctx.lineWidth = 2.2;
-  ctx.lineCap = 'round';
-  ctx.lineJoin = 'round';
-  ctx.strokeStyle = '#1A1916';
-  sigPad.ctx = ctx;
-  sigPad.drawing = false;
-  sigPad.hasInk = false;
-  sigPad.lastW = w;
-  document.getElementById('sig-box').classList.remove('signed');
-}
-
-function clearSignature() { initSignaturePad(); }
+function initSignaturePad() { sigPad.init(); }
+function clearSignature() { sigPad.init(); }
+function clearRepSignature() { repPad.init(); }
+function bindSignaturePad() { sigPad.bind(); repPad.bind(); }
+function signatureCapture() { return sigPad.capture(); }
 
 function resetSignatureBlock() {
-  initSignaturePad();
+  sigPad.init();
   document.getElementById('sig-date').value = todayISO();
   document.getElementById('sig-name').value = currentUser.name || '';
-}
-
-function sigPoint(e) {
-  const rect = document.getElementById('sig-canvas').getBoundingClientRect();
-  return { x: e.clientX - rect.left, y: e.clientY - rect.top };
-}
-
-function bindSignaturePad() {
-  const c = document.getElementById('sig-canvas');
-  c.addEventListener('pointerdown', e => {
-    if (!sigPad.ctx) initSignaturePad();
-    if (!sigPad.ctx) return;
-    e.preventDefault();
-    c.setPointerCapture(e.pointerId);
-    sigPad.drawing = true;
-    const p = sigPoint(e);
-    sigPad.ctx.beginPath();
-    sigPad.ctx.moveTo(p.x, p.y);
-    // A tap leaves a dot.
-    sigPad.ctx.lineTo(p.x + 0.01, p.y + 0.01);
-    sigPad.ctx.stroke();
-    sigPad.hasInk = true;
-    document.getElementById('sig-box').classList.add('signed');
-  });
-  c.addEventListener('pointermove', e => {
-    if (!sigPad.drawing) return;
-    e.preventDefault();
-    const p = sigPoint(e);
-    sigPad.ctx.lineTo(p.x, p.y);
-    sigPad.ctx.stroke();
-  });
-  const stop = e => {
-    if (!sigPad.drawing) return;
-    sigPad.drawing = false;
-    try { c.releasePointerCapture(e.pointerId); } catch (_) {}
-  };
-  c.addEventListener('pointerup', stop);
-  c.addEventListener('pointercancel', stop);
-  c.addEventListener('pointerleave', stop);
-  // Rotating a phone resizes the pad. Only rebuild it if nothing has been signed yet.
-  window.addEventListener('resize', () => {
-    if (document.getElementById('screen-form').classList.contains('active') &&
-        !sigPad.hasInk && c.clientWidth !== sigPad.lastW) initSignaturePad();
-  });
-}
-
-function signatureCapture() {
-  const c = document.getElementById('sig-canvas');
-  return { img: c.toDataURL('image/png'), w: c.width, h: c.height };
 }
 
 // ═══════════════════════════════════════
@@ -1942,6 +2006,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Form 50 show/hide wiring
   document.querySelectorAll('input[name="f50-choice"]').forEach(r => r.addEventListener('change', updateForm50Visibility));
   document.getElementById('f50-notified').addEventListener('change', updateForm50Visibility);
+  document.getElementById('f50-rep-toggle').addEventListener('change', updateForm50Visibility);
 
   // Set today's date as default
   const today = new Date().toISOString().split('T')[0];
@@ -2067,7 +2132,6 @@ function openForm(formId) {
     // Show near-miss fields, hide other form container
     document.querySelector('.form-body').style.display = 'block';
     document.getElementById('other-forms-container').style.display = 'none';
-    document.getElementById('f-reporter').placeholder = `${currentUser.name} (pre-filled — clear to report anonymously)`;
     document.getElementById('f-reporter').value = currentUser.name;
     document.getElementById('f-date').value = today;
   } else {
@@ -2154,6 +2218,7 @@ function validateForm() {
 function validateFormFields() {
   if (currentForm === 'near-miss') {
     const required = [
+      { id: 'f-reporter', label: 'Reported by' },
       { id: 'f-date', label: 'Date' },
       { id: 'f-time', label: 'Time' },
       { id: 'f-location', label: 'Location' },
@@ -2195,6 +2260,11 @@ function validateFormFields() {
     if (f50c.value === 'none' && !document.querySelector('input[name="f50-reason"]:checked')) return t('Please select a reason for not choosing a doctor (Form 50).');
     if (!document.getElementById('f50-notified').checked) return t('Please confirm that your employer informed you of your right to choose a doctor (Form 50).');
     if (!getVal('f50-notice-date')) return t('Please enter the date you were notified (Form 50).');
+    if (document.getElementById('f50-rep-toggle').checked) {
+      if (!getVal('f50-rep-name')) return t("Please enter the employer representative's printed name.");
+      if (!repPad.hasInk) return t('Please have the employer representative sign.');
+      if (!getVal('f50-rep-date')) return t("Please enter the representative's signature date.");
+    }
     return null;
   }
 
@@ -2262,7 +2332,7 @@ function collectFormData() {
       .map(c => c.value === 'Other' ? `Other: ${getVal('f-factor-other')}` : c.value);
     return {
       formType: 'Near Miss Report',
-      reporter: getVal('f-reporter') || 'Anonymous',
+      reporter: getVal('f-reporter'),
       empId: currentUser.empId,
       date: getVal('f-date'), time: getVal('f-time'),
       location: getVal('f-location'), description: getVal('f-describe'),
@@ -2298,6 +2368,9 @@ function collectFormData() {
       form50NoChoiceReasons: f50Chose ? '' : Array.from(document.querySelectorAll('input[name="f50-reason"]:checked')).map(c => c.value).join(', '),
       form50NoticeConfirmed: f50Notified ? 'Yes' : 'No',
       form50DateOfNotice: f50Notified ? getVal('f50-notice-date') : '',
+      form50RepSigned: document.getElementById('f50-rep-toggle').checked ? 'Yes' : 'No',
+      form50RepName: document.getElementById('f50-rep-toggle').checked ? getVal('f50-rep-name') : '',
+      form50RepDate: document.getElementById('f50-rep-toggle').checked ? getVal('f50-rep-date') : '',
       form50Language: uiLanguage === 'es' ? 'Spanish' : 'English',
       submittedAt,
     };
@@ -2360,7 +2433,7 @@ function collectFormData() {
 //  PDF GENERATION — CLASSIC FORM STYLE
 // ═══════════════════════════════════════
 // sig = { img: dataURL, w: pixelWidth, h: pixelHeight } captured from the signature pad.
-function generatePDF(data, sig) {
+function generatePDF(data, sig, repSig) {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ unit: 'pt', format: 'letter' });
   const margin = 40;
@@ -2479,7 +2552,7 @@ function generatePDF(data, sig) {
   }
 
   // ── SIGNATURE ROW (signature image on the left, signed date beside it) ──
-  function sigRow(label1, label2, blank) {
+  function sigRow(label1, label2, blank, imgOverride, dateOverride) {
     const h = 60;
     if (y + h > 750) { doc.addPage(); y = margin; drawPageBorder(); }
     const total = contentW + 20;
@@ -2490,13 +2563,14 @@ function generatePDF(data, sig) {
     doc.setTextColor(80, 80, 80); doc.setFontSize(7.5); doc.setFont('helvetica','bold');
     doc.text(label1, margin - 4, y + 9);
     doc.text(label2, margin - 4 + left, y + 9);
-    if (!blank && sig && sig.img) {
+    const sg = imgOverride || sig;
+    if (!blank && sg && sg.img) {
       const maxW = left - 16, maxH = 42;
-      const scale = Math.min(maxW / sig.w, maxH / sig.h);
-      doc.addImage(sig.img, 'PNG', margin - 4, y + 14, sig.w * scale, sig.h * scale);
+      const scale = Math.min(maxW / sg.w, maxH / sg.h);
+      doc.addImage(sg.img, 'PNG', margin - 4, y + 14, sg.w * scale, sg.h * scale);
     }
     doc.setTextColor(...black); doc.setFontSize(10); doc.setFont('helvetica','normal');
-    doc.text(blank ? '' : (data.signatureDate || ''), margin - 4 + left, y + 34);
+    doc.text(blank ? '' : (dateOverride !== undefined ? dateOverride : (data.signatureDate || '')), margin - 4 + left, y + 34);
     y += h;
   }
 
@@ -2589,8 +2663,9 @@ function generatePDF(data, sig) {
 
     sectionHeader(L.employerConfirmHeading);
     f50Para(L.employerConfirmText, 9.5, false);
-    row2(L.repName, '', L.dateOfNotice, '');
-    sigRow(L.repSignature, L.date, true);
+    const repSigned = data.form50RepSigned === 'Yes';
+    row2(L.repName, repSigned ? data.form50RepName : '', L.dateOfNotice, repSigned ? data.form50RepDate : '');
+    sigRow(L.repSignature, L.date, !repSigned, repSig, data.form50RepDate);
 
     f50Para(L.footer, 8, false);
   }
@@ -2600,7 +2675,7 @@ function generatePDF(data, sig) {
   // ══════════════════════════════
   if (data.formType === 'Near Miss Report') {
     drawHeader('Near Miss Reporting Form');
-    row('Reported by (Optional)', data.reporter === 'Anonymous' ? '' : data.reporter, 24);
+    row('Reported by', data.reporter, 24);
     sectionHeader('Near Miss Details');
     row2('Date and time of the near miss', data.date + (data.time ? '  ' + data.time : ''), 'Location of the near miss', data.location);
     row('Describe the near miss', data.description, 48);
@@ -2801,7 +2876,7 @@ async function submitForm() {
 
   try {
     // Generate PDF
-    const pdf = generatePDF(data, signatureCapture());
+    const pdf = generatePDF(data, signatureCapture(), data.form50RepSigned === 'Yes' ? repPad.capture() : null);
     const pdfBase64 = pdf.output('datauristring').split(',')[1];
     const xlsxBase64 = generateExcelBase64(data);
 
